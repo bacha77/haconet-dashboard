@@ -249,7 +249,7 @@ function App() {
 
   const chatMessages = messages.filter(m => m.sender_number === selectedNumber);
 
-  const departments = ['All', 'Immigration', 'ESL', 'Health', 'Cultural', 'General'];
+  const departments = ['All', 'Immigration', 'ESL', 'Health', 'Cultural', 'Social Services', 'General'];
   
   const quickReplies = [
     "Biwo nou louvri lendi rive vandredi, soti 9è nan maten pou rive 5è nan aswè. (Office hours)",
