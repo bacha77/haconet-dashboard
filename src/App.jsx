@@ -523,6 +523,14 @@ function App() {
                         "Would you like to join our community WhatsApp group?",
                         "We offer job placement and resume building workshops."
                       ];
+                    } else if (dept.includes('social services')) {
+                      replies = [
+                        "Our address is 2020 Brice Rd, Reynoldsburg, OH 43068.",
+                        "How can our social services team assist you?",
+                        "We can help with applying for benefits and local assistance programs.",
+                        "Would you like to schedule an appointment with a social worker?",
+                        "Do you need help with housing or food assistance?"
+                      ];
                     } else {
                       // General / Other
                       replies = [
