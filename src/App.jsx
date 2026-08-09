@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart } from 'lucide-react';
+import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart, LogOut } from 'lucide-react';
 import './App.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -365,6 +365,11 @@ function App() {
     document.body.removeChild(link);
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('haconet_auth');
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="login-container">
@@ -441,8 +446,11 @@ function App() {
               <ArrowLeft size={16} /> Back to Inbox
             </button>
           )}
-          <button className="btn-broadcast-header" onClick={() => setShowBroadcast(true)}>
+          <button className="btn-broadcast-header" onClick={() => setShowBroadcast(true)} style={{marginRight: 8}}>
             <Megaphone size={16} /> Broadcast
+          </button>
+          <button className="btn-secondary" onClick={handleLogout} style={{color: '#ef4444'}}>
+            <LogOut size={16} /> Logout
           </button>
         </div>
       </header>
