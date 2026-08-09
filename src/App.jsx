@@ -419,13 +419,33 @@ function App() {
                     <div className={`message-bubble ${msg.direction}`}>
                       {msg.body && <p>{msg.body}</p>}
                       {msg.media_url && msg.media_type && msg.media_type.startsWith('audio/') && (
-                        <audio controls src={`http://localhost:3000/api/media?url=${encodeURIComponent(msg.media_url)}`} className="audio-player" />
+                        <audio controls src={`https://haconet-twilio-phone.onrender.com/api/media?url=${encodeURIComponent(msg.media_url)}`} className="audio-player" />
                       )}
                       {msg.media_url && msg.media_type && msg.media_type.startsWith('image/') && (
-                        <img src={`http://localhost:3000/api/media?url=${encodeURIComponent(msg.media_url)}`} alt="attachment" className="image-attachment" />
+                        <img src={`https://haconet-twilio-phone.onrender.com/api/media?url=${encodeURIComponent(msg.media_url)}`} alt="attachment" className="image-attachment" />
+                      )}
+                      {msg.media_url && msg.media_type && !msg.media_type.startsWith('audio/') && !msg.media_type.startsWith('image/') && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', marginTop: '8px' }}>
+                          <Paperclip size={20} />
+                          <span>Document Attached</span>
+                        </div>
                       )}
                       {msg.media_url && !msg.media_type && (
                         <img src={msg.media_url} alt="outbound attachment" className="image-attachment" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '8px' }} />
+                      )}
+
+                      {msg.media_url && (
+                        <div style={{ marginTop: '4px' }}>
+                          <a 
+                            href={msg.direction === 'inbound' ? `https://haconet-twilio-phone.onrender.com/api/media?url=${encodeURIComponent(msg.media_url)}` : msg.media_url}
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            download 
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none' }}
+                          >
+                            <Download size={14} /> Download File
+                          </a>
+                        </div>
                       )}
                       
                       {translations[msg.id] && (
