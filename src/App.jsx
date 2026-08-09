@@ -8,6 +8,10 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => sessionStorage.getItem('haconet_auth') === 'true');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState(false);
+
   const [currentView, setCurrentView] = useState('inbox');
   const [messages, setMessages] = useState([]);
   const [contacts, setContacts] = useState({});
@@ -360,6 +364,39 @@ function App() {
     link.click();
     document.body.removeChild(link);
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <img src={`${import.meta.env.BASE_URL}logo.jpg.jpg`} alt="Haconet Logo" className="login-logo" />
+          <h2>Staff Login</h2>
+          <p>Please enter the dashboard password to continue.</p>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (loginPassword === 'Haconet@2026') {
+              setIsAuthenticated(true);
+              sessionStorage.setItem('haconet_auth', 'true');
+              setLoginError(false);
+            } else {
+              setLoginError(true);
+            }
+          }}>
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={loginPassword} 
+              onChange={e => setLoginPassword(e.target.value)} 
+              autoFocus
+              className="login-input"
+            />
+            {loginError && <p className="login-error">Incorrect password.</p>}
+            <button type="submit" className="login-btn">Login</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-layout">
