@@ -296,7 +296,7 @@ function App() {
       {/* TOP HORIZONTAL NAV */}
       <header className="top-nav">
         <div className="nav-brand">
-          <img src="/logo.jpg.jpg" alt="Haconet Logo" className="brand-logo" />
+          <img src={`${import.meta.env.BASE_URL}logo.jpg.jpg`} alt="Haconet Logo" className="brand-logo" />
           <span>Haconet Inbox</span>
         </div>
         
