@@ -244,9 +244,14 @@ function App() {
   const departments = ['All', 'Immigration', 'ESL', 'Health', 'Cultural', 'General'];
   
   const quickReplies = [
-    "Our office hours are Monday to Friday, 9am to 5pm.",
-    "Could you please provide your full name?",
-    "Our address is 123 Main St. Columbus, OH."
+    "Biwo nou louvri lendi rive vandredi, soti 9è nan maten pou rive 5è nan aswè. (Office hours)",
+    "Adrès nou se 2020 Brice Rd, Reynoldsburg, OH 43068. (Address)",
+    "Èske ou ka ban nou non konplè w ak dat nesans ou tanpri? (Ask for Name/DOB)",
+    "Tanpri, èske w ka voye yon mesaj vwa pou eksplike ka w la pi byen? (Ask for Voice Note)",
+    "Youn nan ajan imigrasyon nou yo ap kontakte w byento. (Immigration Follow-up)",
+    "Kilè ou ta renmen pran yon randevou pou klas angle a? (ESL Appointment)",
+    "Pou kesyon sante a, èske ou gen asirans medikal? (Health Insurance Ask)",
+    "Mèsi paske w kontakte Haconet! Kijan nou ka ede w jodi a? (Greeting)"
   ];
 
   const exportToCSV = () => {
