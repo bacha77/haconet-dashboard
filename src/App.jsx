@@ -11,6 +11,7 @@ function App() {
   const [currentView, setCurrentView] = useState('inbox');
   const [messages, setMessages] = useState([]);
   const [contacts, setContacts] = useState({});
+  const [staffList, setStaffList] = useState([]);
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -24,6 +25,11 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Staff Management State
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [isAddingStaff, setIsAddingStaff] = useState(false);
   
   // CRM Profile State
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -47,6 +53,7 @@ function App() {
     const fetchData = async () => {
       const { data: msgs } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
       const { data: cnts } = await supabase.from('contacts').select('*');
+      const { data: stff } = await supabase.from('staff').select('*').order('name', { ascending: true });
       
       if (msgs) setMessages(msgs);
       if (cnts) {
@@ -54,6 +61,7 @@ function App() {
         cnts.forEach(c => cntsMap[c.phone_number] = c);
         setContacts(cntsMap);
       }
+      if (stff) setStaffList(stff);
     };
     fetchData();
 
@@ -190,16 +198,8 @@ function App() {
     }
   };
 
-  const handleAssign = async (number) => {
-    let staffName = localStorage.getItem('staffName');
-    if (!staffName) {
-      staffName = prompt("Enter your name to assign this conversation to yourself:");
-      if (staffName) {
-        localStorage.setItem('staffName', staffName);
-      } else {
-        return; // cancelled
-      }
-    }
+  const handleAssign = async (number, staffName) => {
+    if (!staffName) return;
     
     try {
       await fetch('https://haconet-twilio-phone.onrender.com/api/assign', {
@@ -242,7 +242,38 @@ function App() {
     }
   };
 
-  const handleTranslate = async (msgId, text) => {
+  const handleAddStaff = async (e) => {
+    e.preventDefault();
+    if (!newStaffName.trim()) return;
+    setIsAddingStaff(true);
+    try {
+      const { data, error } = await supabase.from('staff').insert([{ name: newStaffName.trim() }]).select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setStaffList(curr => [...curr, data[0]].sort((a,b) => a.name.localeCompare(b.name)));
+        setNewStaffName('');
+      }
+    } catch (error) {
+      console.error('Add staff error:', error);
+      alert('Failed to add staff member. They might already exist.');
+    } finally {
+      setIsAddingStaff(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id) => {
+    if (!confirm('Are you sure you want to delete this staff member?')) return;
+    try {
+      const { error } = await supabase.from('staff').delete().eq('id', id);
+      if (error) throw error;
+      setStaffList(curr => curr.filter(s => s.id !== id));
+    } catch (error) {
+      console.error('Delete staff error:', error);
+      alert('Failed to delete staff member.');
+    }
+  };
+
+  const handleTranslate = async (msgId, text, toLang) => {
     if (!text) return;
     setTranslatingId(msgId);
     try {
@@ -350,6 +381,9 @@ function App() {
         <div className="nav-actions">
           {currentView === 'inbox' ? (
             <>
+              <button className="btn-secondary" onClick={() => setShowStaffModal(true)} style={{marginRight: 8}}>
+                <User size={16} /> Manage Staff
+              </button>
               <button className="btn-secondary" onClick={() => setCurrentView('analytics')} style={{marginRight: 8}}>
                 <BarChart size={16} /> Analytics
               </button>
@@ -447,15 +481,17 @@ function App() {
                   )}
                 </div>
                 <div className="chat-header-actions">
-                  {contacts[selectedNumber]?.assigned_to ? (
-                    <span className="dept-badge-glass" style={{background: 'rgba(52,211,153,0.2)', color: '#34d399'}}>
-                      👤 Assigned to {contacts[selectedNumber].assigned_to}
-                    </span>
-                  ) : (
-                    <button className="btn-resolve-glass" onClick={() => handleAssign(selectedNumber)} style={{marginRight: 8}}>
-                      👤 Assign to Me
-                    </button>
-                  )}
+                  <select 
+                    className="glass-input" 
+                    style={{marginRight: 8, padding: '4px 8px', fontSize: 12, height: 32, cursor: 'pointer', background: contacts[selectedNumber]?.assigned_to ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.05)', color: contacts[selectedNumber]?.assigned_to ? '#34d399' : 'white', border: contacts[selectedNumber]?.assigned_to ? '1px solid rgba(52,211,153,0.3)' : '1px solid rgba(255,255,255,0.1)'}}
+                    value={contacts[selectedNumber]?.assigned_to || ''}
+                    onChange={(e) => handleAssign(selectedNumber, e.target.value)}
+                  >
+                    <option value="" disabled>👤 Assign Ticket</option>
+                    {staffList.map(staff => (
+                      <option key={staff.id} value={staff.name} style={{color: '#000'}}>{staff.name}</option>
+                    ))}
+                  </select>
                   <button className="btn-resolve-glass" onClick={() => handleResolve(selectedNumber)}>
                     <CheckCircle size={16} /> Mark Resolved
                   </button>
@@ -845,6 +881,52 @@ function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* STAFF MANAGEMENT MODAL */}
+      {showStaffModal && (
+        <div className="modal-overlay">
+          <div className="modal-content-glass" style={{maxWidth: 400}}>
+            <h2><User size={20} /> Manage Staff</h2>
+            <p>Add or remove staff members for ticket assignment.</p>
+            
+            <form onSubmit={handleAddStaff} style={{display: 'flex', gap: 8, marginBottom: 20}}>
+              <input 
+                type="text" 
+                value={newStaffName}
+                onChange={e => setNewStaffName(e.target.value)}
+                placeholder="Enter staff name..."
+                className="glass-input"
+                style={{flex: 1}}
+              />
+              <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim()} style={{padding: '0 16px', margin: 0}}>
+                {isAddingStaff ? 'Adding...' : 'Add'}
+              </button>
+            </form>
+
+            <div style={{maxHeight: 300, overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 8}}>
+              {staffList.length === 0 ? (
+                <div style={{padding: 16, textAlign: 'center', opacity: 0.5}}>No staff members found.</div>
+              ) : (
+                staffList.map(staff => (
+                  <div key={staff.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                    <span>{staff.name}</span>
+                    <button 
+                      onClick={() => handleDeleteStaff(staff.id)}
+                      style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12}}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="modal-actions" style={{marginTop: 20}}>
+              <button type="button" className="btn-cancel-glass" onClick={() => setShowStaffModal(false)} style={{width: '100%'}}>Close</button>
+            </div>
           </div>
         </div>
       )}
