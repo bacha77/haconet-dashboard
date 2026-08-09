@@ -335,7 +335,7 @@ function App() {
       <div className="main-content">
         
         {/* INNER SIDEBAR (CONTACTS) */}
-        <div className="inbox-sidebar">
+        <div className={`inbox-sidebar ${selectedNumber ? 'mobile-hidden' : ''}`}>
           <div className="inbox-header">
             <input 
               type="text" 
@@ -388,11 +388,14 @@ function App() {
         </div>
 
         {/* CHAT AREA */}
-        <div className="chat-area">
+        <div className={`chat-area ${!selectedNumber ? 'mobile-hidden' : ''}`}>
           {selectedNumber ? (
             <>
               <div className="chat-header">
                 <div className="chat-header-info">
+                  <button className="btn-mobile-back" onClick={() => setSelectedNumber(null)}>
+                    <ArrowLeft size={20} />
+                  </button>
                   <div className="avatar-glass"><User size={24} /></div>
                   <h3>
                     {contacts[selectedNumber]?.first_name 
@@ -596,7 +599,7 @@ function App() {
 
         {/* CRM SIDEBAR */}
         {selectedNumber && currentView === 'inbox' && (
-          <div className="crm-sidebar">
+          <div className="crm-sidebar mobile-hidden">
             <div className="crm-header">
               <h3>Contact Info</h3>
             </div>
