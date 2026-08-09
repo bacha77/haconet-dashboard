@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft } from 'lucide-react';
+import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip } from 'lucide-react';
 import './App.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -20,6 +20,8 @@ function App() {
   const [broadcastText, setBroadcastText] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
   
   // CRM Profile State
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -129,15 +131,21 @@ function App() {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!replyText.trim() || !selectedNumber) return;
+    if ((!replyText.trim() && !selectedFile) || !selectedNumber) return;
     setIsSending(true);
     try {
-      await fetch('http://localhost:3000/api/reply', {
+      const formData = new FormData();
+      formData.append('to', selectedNumber);
+      if (replyText.trim()) formData.append('body', replyText);
+      if (selectedFile) formData.append('file', selectedFile);
+
+      await fetch('https://haconet-twilio-phone.onrender.com/api/reply', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: selectedNumber, body: replyText })
+        body: formData
       });
       setReplyText('');
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
       console.error('Send error:', error);
     } finally {
@@ -416,6 +424,9 @@ function App() {
                       {msg.media_url && msg.media_type && msg.media_type.startsWith('image/') && (
                         <img src={`http://localhost:3000/api/media?url=${encodeURIComponent(msg.media_url)}`} alt="attachment" className="image-attachment" />
                       )}
+                      {msg.media_url && !msg.media_type && (
+                        <img src={msg.media_url} alt="outbound attachment" className="image-attachment" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '8px' }} />
+                      )}
                       
                       {translations[msg.id] && (
                         <div className="translation-box">
@@ -508,6 +519,21 @@ function App() {
                   })()}
                 </div>
                 <form className="chat-input-glass" onSubmit={handleSend}>
+                  <input 
+                    type="file" 
+                    style={{ display: 'none' }} 
+                    ref={fileInputRef} 
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn-translate-outbound" 
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach File"
+                    style={{ padding: '8px' }}
+                  >
+                    <Paperclip size={18} />
+                  </button>
                   <button 
                     type="button" 
                     className="btn-translate-outbound" 
@@ -517,14 +543,23 @@ function App() {
                   >
                     {isTranslatingDraft ? '...' : '文 Creole'}
                   </button>
-                  <input 
-                    type="text" 
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type a message (or type in English and translate)..." 
-                    disabled={isSending}
-                  />
-                  <button type="submit" disabled={isSending || !replyText.trim()} className="send-btn-glass">
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '12px' }}>
+                    {selectedFile && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '4px' }}>
+                        📎 {selectedFile.name} 
+                        <span style={{ cursor: 'pointer', marginLeft: '8px', opacity: 0.7 }} onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}>✖</span>
+                      </div>
+                    )}
+                    <input 
+                      type="text" 
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Type a message (or type in English and translate)..." 
+                      disabled={isSending}
+                      style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }}
+                    />
+                  </div>
+                  <button type="submit" disabled={isSending || (!replyText.trim() && !selectedFile)} className="send-btn-glass">
                     <Send size={18} />
                   </button>
                 </form>
