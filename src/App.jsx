@@ -15,13 +15,15 @@ function App() {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [filter, setFilter] = useState('unread');
   const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [staffFilter, setStaffFilter] = useState('All');
+  
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastText, setBroadcastText] = useState('');
   const [broadcastDept, setBroadcastDept] = useState('All');
   const [broadcastTime, setBroadcastTime] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [filter, setFilter] = useState('unread');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -132,11 +134,17 @@ function App() {
     
     // Department filter
     const deptMatch = departmentFilter === 'All' ? true : dept === departmentFilter;
+
+    // Staff filter
+    const assignedTo = contacts[num]?.assigned_to || null;
+    const staffMatch = staffFilter === 'All' ? true : (staffFilter === 'Unassigned' ? !assignedTo : assignedTo === staffFilter);
     
     // Search filter
-    const searchMatch = num.includes(searchTerm);
+    const searchMatch = num.includes(searchTerm) || 
+      (contacts[num]?.first_name && contacts[num].first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (contacts[num]?.last_name && contacts[num].last_name.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return statusMatch && deptMatch && searchMatch;
+    return statusMatch && deptMatch && staffMatch && searchMatch;
   });
 
   const handleSend = async (e) => {
@@ -419,6 +427,21 @@ function App() {
               <button className={filter === 'unread' ? 'active' : ''} onClick={() => setFilter('unread')}>Unread</button>
               <button className={filter === 'resolved' ? 'active' : ''} onClick={() => setFilter('resolved')}>Resolved</button>
               <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All Status</button>
+            </div>
+            
+            <div style={{ marginTop: '12px', padding: '0 10px' }}>
+              <select 
+                className="glass-input" 
+                style={{ width: '100%', padding: '6px', fontSize: 13, background: 'rgba(255,255,255,0.05)', color: 'white' }}
+                value={staffFilter}
+                onChange={(e) => setStaffFilter(e.target.value)}
+              >
+                <option value="All" style={{color: '#000'}}>All Staff</option>
+                <option value="Unassigned" style={{color: '#000'}}>Unassigned</option>
+                {staffList.map(staff => (
+                  <option key={staff.id} value={staff.name} style={{color: '#000'}}>{staff.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 
