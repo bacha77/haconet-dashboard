@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip } from 'lucide-react';
+import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart } from 'lucide-react';
 import './App.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -18,6 +18,8 @@ function App() {
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastText, setBroadcastText] = useState('');
+  const [broadcastDept, setBroadcastDept] = useState('All');
+  const [broadcastTime, setBroadcastTime] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -158,14 +160,16 @@ function App() {
     if (!broadcastText.trim()) return;
     setIsBroadcasting(true);
     try {
-      await fetch('http://localhost:3000/api/broadcast', {
+      const res = await fetch('https://haconet-twilio-phone.onrender.com/api/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: broadcastText })
+        body: JSON.stringify({ message: broadcastText, department: broadcastDept, sendAt: broadcastTime })
       });
+      const data = await res.json();
       setBroadcastText('');
+      setBroadcastTime('');
       setShowBroadcast(false);
-      alert('Broadcast sent successfully!');
+      alert(data.scheduled ? `Broadcast scheduled for ${new Date(data.time).toLocaleString()}!` : 'Broadcast sent successfully!');
     } catch (error) {
       console.error('Broadcast error:', error);
       alert('Failed to send broadcast');
@@ -183,6 +187,34 @@ function App() {
       });
     } catch (error) {
       console.error('Resolve error:', error);
+    }
+  };
+
+  const handleAssign = async (number) => {
+    let staffName = localStorage.getItem('staffName');
+    if (!staffName) {
+      staffName = prompt("Enter your name to assign this conversation to yourself:");
+      if (staffName) {
+        localStorage.setItem('staffName', staffName);
+      } else {
+        return; // cancelled
+      }
+    }
+    
+    try {
+      await fetch('https://haconet-twilio-phone.onrender.com/api/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: number, assigned_to: staffName })
+      });
+      
+      // Update local state optimistically
+      setContacts(curr => ({
+        ...curr,
+        [number]: { ...curr[number], assigned_to: staffName }
+      }));
+    } catch (error) {
+      console.error('Assign error:', error);
     }
   };
 
@@ -317,9 +349,14 @@ function App() {
         
         <div className="nav-actions">
           {currentView === 'inbox' ? (
-            <button className="btn-secondary" onClick={() => setCurrentView('directory')}>
-              <Users size={16} /> Contacts Directory
-            </button>
+            <>
+              <button className="btn-secondary" onClick={() => setCurrentView('analytics')} style={{marginRight: 8}}>
+                <BarChart size={16} /> Analytics
+              </button>
+              <button className="btn-secondary" onClick={() => setCurrentView('directory')}>
+                <Users size={16} /> Contacts Directory
+              </button>
+            </>
           ) : (
             <button className="btn-secondary" onClick={() => setCurrentView('inbox')}>
               <ArrowLeft size={16} /> Back to Inbox
@@ -410,6 +447,15 @@ function App() {
                   )}
                 </div>
                 <div className="chat-header-actions">
+                  {contacts[selectedNumber]?.assigned_to ? (
+                    <span className="dept-badge-glass" style={{background: 'rgba(52,211,153,0.2)', color: '#34d399'}}>
+                      👤 Assigned to {contacts[selectedNumber].assigned_to}
+                    </span>
+                  ) : (
+                    <button className="btn-resolve-glass" onClick={() => handleAssign(selectedNumber)} style={{marginRight: 8}}>
+                      👤 Assign to Me
+                    </button>
+                  )}
                   <button className="btn-resolve-glass" onClick={() => handleResolve(selectedNumber)}>
                     <CheckCircle size={16} /> Mark Resolved
                   </button>
@@ -715,13 +761,77 @@ function App() {
         </div>
       )}
 
+      {/* ANALYTICS VIEW */}
+      {currentView === 'analytics' && (
+        <div className="directory-overlay">
+          <div className="directory-header">
+            <h2>System Analytics</h2>
+          </div>
+          <div style={{padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap'}}>
+            <div className="analytics-card">
+              <h3>Total Contacts</h3>
+              <div className="stat-number">{Object.keys(contacts).length}</div>
+            </div>
+            <div className="analytics-card">
+              <h3>Total Messages</h3>
+              <div className="stat-number">{messages.length}</div>
+            </div>
+            <div className="analytics-card">
+              <h3>Inbound Messages</h3>
+              <div className="stat-number">{messages.filter(m => m.direction === 'inbound').length}</div>
+            </div>
+            
+            <div className="analytics-card" style={{width: '100%', maxWidth: '600px'}}>
+              <h3>Contacts by Department</h3>
+              <div className="dept-bars">
+                {Object.entries(Object.values(contacts).reduce((acc, c) => {
+                  const dept = c.department || 'General';
+                  acc[dept] = (acc[dept] || 0) + 1;
+                  return acc;
+                }, {})).map(([dept, count]) => (
+                  <div key={dept} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
+                    <span style={{width: 120, fontSize: 14, fontWeight: 500}}>{dept}</span>
+                    <div style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, height: 24, overflow: 'hidden'}}>
+                      <div style={{
+                        width: `${(count / Math.max(1, Object.keys(contacts).length)) * 100}%`,
+                        backgroundColor: 'var(--primary)',
+                        height: '100%',
+                        borderRadius: 4
+                      }}></div>
+                    </div>
+                    <span style={{marginLeft: 12, fontSize: 14, fontWeight: 'bold'}}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* BROADCAST MODAL (GLASS) */}
       {showBroadcast && (
         <div className="modal-overlay">
           <div className="modal-content-glass">
             <h2><Megaphone size={20} /> Broadcast Message</h2>
-            <p>Send a message to EVERY contact in the database.</p>
+            <p>Send a message to contacts in your database.</p>
             <form onSubmit={handleBroadcast}>
+              <div style={{display: 'flex', gap: 12, marginBottom: 16}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.7}}>Department (Filter)</label>
+                  <select value={broadcastDept} onChange={e => setBroadcastDept(e.target.value)} className="glass-input">
+                    {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                  </select>
+                </div>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.7}}>Schedule Time (Optional)</label>
+                  <input 
+                    type="datetime-local" 
+                    value={broadcastTime} 
+                    onChange={e => setBroadcastTime(e.target.value)}
+                    className="glass-input"
+                  />
+                </div>
+              </div>
               <textarea 
                 value={broadcastText}
                 onChange={(e) => setBroadcastText(e.target.value)}
@@ -731,7 +841,7 @@ function App() {
               <div className="modal-actions">
                 <button type="button" className="btn-cancel-glass" onClick={() => setShowBroadcast(false)}>Cancel</button>
                 <button type="submit" className="btn-send-glass" disabled={isBroadcasting || !broadcastText.trim()}>
-                  {isBroadcasting ? 'Sending...' : 'Send Broadcast'}
+                  {isBroadcasting ? 'Scheduling...' : (broadcastTime ? 'Schedule Broadcast' : 'Send Now')}
                 </button>
               </div>
             </form>
