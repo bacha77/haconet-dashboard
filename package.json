@@ -1,7 +1,7 @@
 {
   "name": "haconet-dashboard",
   "private": true,
-  "homepage": "https://bacha77.github.io/haconet-dashboard/",
+  "homepage": "https://dashboard.haconet.org/",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
