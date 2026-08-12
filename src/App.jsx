@@ -39,6 +39,7 @@ function App() {
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffEmail, setNewStaffEmail] = useState('');
   const [newStaffRole, setNewStaffRole] = useState('tenant');
+  const [editingStaffId, setEditingStaffId] = useState(null);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   
   // CRM Profile State
@@ -305,24 +306,47 @@ function App() {
     if (!newStaffName.trim() || !newStaffEmail.trim()) return;
     setIsAddingStaff(true);
     try {
-      const { data, error } = await supabase.from('staff').insert([{ 
-        name: newStaffName.trim(),
-        email: newStaffEmail.trim(),
-        role: newStaffRole
-      }]).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setStaffList(curr => [...curr, data[0]].sort((a,b) => a.name.localeCompare(b.name)));
-        setNewStaffName('');
-        setNewStaffEmail('');
-        setNewStaffRole('tenant');
+      if (editingStaffId) {
+        const { data, error } = await supabase.from('staff').update({
+          name: newStaffName.trim(),
+          email: newStaffEmail.trim(),
+          role: newStaffRole
+        }).eq('id', editingStaffId).select();
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setStaffList(curr => curr.map(s => s.id === editingStaffId ? data[0] : s).sort((a,b) => a.name.localeCompare(b.name)));
+        }
+      } else {
+        const { data, error } = await supabase.from('staff').insert([{ 
+          name: newStaffName.trim(),
+          email: newStaffEmail.trim(),
+          role: newStaffRole
+        }]).select();
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setStaffList(curr => [...curr, data[0]].sort((a,b) => a.name.localeCompare(b.name)));
+        }
       }
+      
+      setNewStaffName('');
+      setNewStaffEmail('');
+      setNewStaffRole('tenant');
+      setEditingStaffId(null);
     } catch (error) {
-      console.error('Add staff error:', error);
-      alert('Failed to add staff member. They might already exist.');
+      console.error('Add/Update staff error:', error);
+      alert('Failed to save staff member.');
     } finally {
       setIsAddingStaff(false);
     }
+  };
+
+  const startEditingStaff = (staff) => {
+    setEditingStaffId(staff.id);
+    setNewStaffName(staff.name || '');
+    setNewStaffEmail(staff.email || '');
+    setNewStaffRole(staff.role || 'tenant');
   };
 
   const handleDeleteStaff = async (id) => {
@@ -1038,8 +1062,18 @@ function App() {
                   <option value="admin">Admin (Full Access)</option>
                 </select>
                 <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim() || !newStaffEmail.trim()} style={{padding: '0 16px', margin: 0}}>
-                  {isAddingStaff ? 'Adding...' : 'Add'}
+                  {isAddingStaff ? 'Saving...' : (editingStaffId ? 'Update' : 'Add')}
                 </button>
+                {editingStaffId && (
+                  <button type="button" onClick={() => {
+                    setEditingStaffId(null);
+                    setNewStaffName('');
+                    setNewStaffEmail('');
+                    setNewStaffRole('tenant');
+                  }} className="btn-send-glass" style={{padding: '0 16px', margin: 0, background: 'rgba(255,255,255,0.1)'}}>
+                    Cancel
+                  </button>
+                )}
               </div>
             </form>
 
@@ -1051,14 +1085,22 @@ function App() {
                   <div key={staff.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
                     <div>
                       <div style={{fontWeight: 'bold'}}>{staff.name} <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role || 'tenant'}</span></div>
-                      <div style={{fontSize: 12, opacity: 0.6}}>{staff.email}</div>
+                      <div style={{fontSize: 12, opacity: 0.6}}>{staff.email || 'No email assigned'}</div>
                     </div>
-                    <button 
-                      onClick={() => handleDeleteStaff(staff.id)}
-                      style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12}}
-                    >
-                      Delete
-                    </button>
+                    <div style={{display: 'flex', gap: 6}}>
+                      <button 
+                        onClick={() => startEditingStaff(staff)}
+                        style={{background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12}}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteStaff(staff.id)}
+                        style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12}}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
