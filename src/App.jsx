@@ -37,6 +37,8 @@ function App() {
   // Staff Management State
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffRole, setNewStaffRole] = useState('tenant');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   
   // CRM Profile State
@@ -300,14 +302,20 @@ function App() {
 
   const handleAddStaff = async (e) => {
     e.preventDefault();
-    if (!newStaffName.trim()) return;
+    if (!newStaffName.trim() || !newStaffEmail.trim()) return;
     setIsAddingStaff(true);
     try {
-      const { data, error } = await supabase.from('staff').insert([{ name: newStaffName.trim() }]).select();
+      const { data, error } = await supabase.from('staff').insert([{ 
+        name: newStaffName.trim(),
+        email: newStaffEmail.trim(),
+        role: newStaffRole
+      }]).select();
       if (error) throw error;
       if (data && data.length > 0) {
         setStaffList(curr => [...curr, data[0]].sort((a,b) => a.name.localeCompare(b.name)));
         setNewStaffName('');
+        setNewStaffEmail('');
+        setNewStaffRole('tenant');
       }
     } catch (error) {
       console.error('Add staff error:', error);
@@ -1004,18 +1012,35 @@ function App() {
             <h2><User size={20} /> Manage Staff</h2>
             <p>Add or remove staff members for ticket assignment.</p>
             
-            <form onSubmit={handleAddStaff} style={{display: 'flex', gap: 8, marginBottom: 20}}>
+            <form onSubmit={handleAddStaff} style={{display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20}}>
               <input 
                 type="text" 
                 value={newStaffName}
                 onChange={e => setNewStaffName(e.target.value)}
                 placeholder="Enter staff name..."
                 className="glass-input"
-                style={{flex: 1}}
               />
-              <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim()} style={{padding: '0 16px', margin: 0}}>
-                {isAddingStaff ? 'Adding...' : 'Add'}
-              </button>
+              <input 
+                type="email" 
+                value={newStaffEmail}
+                onChange={e => setNewStaffEmail(e.target.value)}
+                placeholder="Google Email (e.g. user@gmail.com)"
+                className="glass-input"
+              />
+              <div style={{display: 'flex', gap: 8}}>
+                <select 
+                  value={newStaffRole}
+                  onChange={e => setNewStaffRole(e.target.value)}
+                  className="glass-input"
+                  style={{flex: 1}}
+                >
+                  <option value="tenant">Tenant (Restricted)</option>
+                  <option value="admin">Admin (Full Access)</option>
+                </select>
+                <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim() || !newStaffEmail.trim()} style={{padding: '0 16px', margin: 0}}>
+                  {isAddingStaff ? 'Adding...' : 'Add'}
+                </button>
+              </div>
             </form>
 
             <div style={{maxHeight: 300, overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 8}}>
@@ -1024,7 +1049,10 @@ function App() {
               ) : (
                 staffList.map(staff => (
                   <div key={staff.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
-                    <span>{staff.name}</span>
+                    <div>
+                      <div style={{fontWeight: 'bold'}}>{staff.name} <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role || 'tenant'}</span></div>
+                      <div style={{fontSize: 12, opacity: 0.6}}>{staff.email}</div>
+                    </div>
                     <button 
                       onClick={() => handleDeleteStaff(staff.id)}
                       style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12}}
