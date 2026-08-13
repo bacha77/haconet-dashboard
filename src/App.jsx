@@ -1071,33 +1071,36 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content-glass" style={{maxWidth: 400}}>
             <h2><User size={20} /> Manage Staff</h2>
-            <p>Add or remove staff members for ticket assignment.</p>
             
-            <form onSubmit={handleAddStaff} style={{display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20}}>
-              <input 
-                type="text" 
-                value={newStaffName}
-                onChange={e => setNewStaffName(e.target.value)}
-                placeholder="Enter staff name..."
-                className="glass-input"
-              />
-              <input 
-                type="email" 
-                value={newStaffEmail}
-                onChange={e => setNewStaffEmail(e.target.value)}
-                placeholder="Google Email (e.g. user@gmail.com)"
-                className="glass-input"
-              />
-              <div style={{display: 'flex', gap: 8}}>
-                <select 
-                  value={newStaffRole}
-                  onChange={e => setNewStaffRole(e.target.value)}
+            <div style={{marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16}}>
+              <h3 style={{fontSize: 14, marginBottom: 12}}>{editingStaffId ? 'Edit Staff Member' : 'Add New Staff Member'}</h3>
+              <form onSubmit={handleAddStaff} style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                <input 
+                  type="text" 
+                  value={newStaffName}
+                  onChange={e => setNewStaffName(e.target.value)}
+                  placeholder="Enter staff name..."
                   className="glass-input"
-                  style={{flex: 1}}
-                >
-                  <option value="tenant">Tenant (Restricted)</option>
-                  <option value="admin">Admin (Full Access)</option>
-                </select>
+                  required
+                />
+                <input 
+                  type="email" 
+                  value={newStaffEmail}
+                  onChange={e => setNewStaffEmail(e.target.value)}
+                  placeholder="Google Email (e.g. user@gmail.com)"
+                  className="glass-input"
+                  required
+                />
+                <div style={{display: 'flex', gap: 8}}>
+                  <select 
+                    value={newStaffRole}
+                    onChange={e => setNewStaffRole(e.target.value)}
+                    className="glass-input"
+                    style={{flex: 1}}
+                  >
+                    <option value="tenant">Haconet Staff (Restricted)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                  </select>
                 <select 
                   value={newStaffDepartment}
                   onChange={e => setNewStaffDepartment(e.target.value)}
@@ -1126,7 +1129,8 @@ function App() {
                   </button>
                 )}
               </div>
-            </form>
+              </form>
+            </div>
 
             <div style={{maxHeight: 300, overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 8}}>
               {staffList.length === 0 ? (
@@ -1136,7 +1140,7 @@ function App() {
                   <div key={staff.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
                     <div>
                       <div style={{fontWeight: 'bold'}}>{staff.name} 
-                        <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role || 'tenant'}</span>
+                        <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role === 'admin' ? 'admin' : 'staff'}</span>
                         <span style={{fontSize: 10, padding: '2px 6px', background: 'rgba(16,185,129,0.2)', color: '#10b981', borderRadius: 10, marginLeft: 6}}>{staff.department || 'All'}</span>
                       </div>
                       <div style={{fontSize: 12, opacity: 0.6}}>{staff.email || 'No email assigned'}</div>
