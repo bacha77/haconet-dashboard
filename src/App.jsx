@@ -39,6 +39,7 @@ function App() {
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffEmail, setNewStaffEmail] = useState('');
   const [newStaffRole, setNewStaffRole] = useState('tenant');
+  const [newStaffDepartment, setNewStaffDepartment] = useState('All');
   const [editingStaffId, setEditingStaffId] = useState(null);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   
@@ -54,6 +55,8 @@ function App() {
 
   const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
   const messagesEndRef = useRef(null);
+  
+  const departments = ['All', 'Immigration', 'ESL', 'Cultural', 'Social Services', 'General'];
 
   useEffect(() => {
     // Auth Listener
@@ -134,14 +137,16 @@ function App() {
         if (staffData) {
           setUserRole(staffData.role || 'tenant');
           setUserStaffName(staffData.name);
+          setUserDepartment(staffData.department || 'All');
           if (staffData.role !== 'admin') {
-            setStaffFilter(staffData.name);
+            setStaffFilter('My Tickets & Unassigned');
           }
         } else {
           // If staff doesn't exist, assume they are a new tenant
           setUserRole('tenant');
-          // Optional: Insert them into staff table here, but let's just let them view nothing until an admin sets them up
           setUserStaffName(''); 
+          setUserDepartment('All');
+          setStaffFilter('My Tickets & Unassigned');
         }
       } catch (err) {
         console.error("Error fetching role:", err);
@@ -188,7 +193,24 @@ function App() {
 
     // Staff filter
     const assignedTo = contacts[num]?.assigned_to || null;
-    const staffMatch = staffFilter === 'All' ? true : (staffFilter === 'Unassigned' ? !assignedTo : assignedTo === staffFilter);
+    let staffMatch = true;
+
+    if (userRole === 'admin') {
+      staffMatch = staffFilter === 'All' ? true : (staffFilter === 'Unassigned' ? !assignedTo : assignedTo === staffFilter);
+    } else {
+      const isMyTicket = assignedTo === userStaffName;
+      const isUnassignedForMyDept = !assignedTo && (userDepartment === 'All' || dept === userDepartment);
+      
+      if (staffFilter === 'My Tickets & Unassigned') {
+         staffMatch = isMyTicket || isUnassignedForMyDept;
+      } else if (staffFilter === 'Unassigned') {
+         staffMatch = isUnassignedForMyDept;
+      } else if (staffFilter === userStaffName) {
+         staffMatch = isMyTicket;
+      } else {
+         staffMatch = isMyTicket || isUnassignedForMyDept; 
+      }
+    }
     
     // Search filter
     const searchMatch = num.includes(searchTerm) || 
@@ -310,7 +332,8 @@ function App() {
         const { data, error } = await supabase.from('staff').update({
           name: newStaffName.trim(),
           email: newStaffEmail.trim(),
-          role: newStaffRole
+          role: newStaffRole,
+          department: newStaffDepartment
         }).eq('id', editingStaffId).select();
         
         if (error) throw error;
@@ -321,7 +344,8 @@ function App() {
         const { data, error } = await supabase.from('staff').insert([{ 
           name: newStaffName.trim(),
           email: newStaffEmail.trim(),
-          role: newStaffRole
+          role: newStaffRole,
+          department: newStaffDepartment
         }]).select();
         
         if (error) throw error;
@@ -333,6 +357,7 @@ function App() {
       setNewStaffName('');
       setNewStaffEmail('');
       setNewStaffRole('tenant');
+      setNewStaffDepartment('All');
       setEditingStaffId(null);
     } catch (error) {
       console.error('Add/Update staff error:', error);
@@ -347,6 +372,7 @@ function App() {
     setNewStaffName(staff.name || '');
     setNewStaffEmail(staff.email || '');
     setNewStaffRole(staff.role || 'tenant');
+    setNewStaffDepartment(staff.department || 'All');
   };
 
   const handleDeleteStaff = async (id) => {
@@ -557,11 +583,23 @@ function App() {
                 value={staffFilter}
                 onChange={(e) => setStaffFilter(e.target.value)}
               >
-                <option value="All" style={{color: '#000'}}>All Staff</option>
-                <option value="Unassigned" style={{color: '#000'}}>Unassigned</option>
-                {staffList.map(staff => (
-                  <option key={staff.id} value={staff.name} style={{color: '#000'}}>{staff.name}</option>
-                ))}
+                {userRole === 'admin' ? (
+                  <option value="All" style={{color: '#000'}}>All Staff</option>
+                ) : null}
+                
+                {userRole !== 'admin' ? (
+                  <option value="My Tickets & Unassigned" style={{color: '#000'}}>My Tickets & Unassigned</option>
+                ) : null}
+                
+                <option value="Unassigned" style={{color: '#000'}}>Unassigned (My Dept)</option>
+                
+                {userRole !== 'admin' ? (
+                  <option value={userStaffName} style={{color: '#000'}}>My Tickets Only</option>
+                ) : (
+                  staffList.map(staff => (
+                    <option key={staff.id} value={staff.name} style={{color: '#000'}}>{staff.name}</option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -1061,6 +1099,19 @@ function App() {
                   <option value="tenant">Tenant (Restricted)</option>
                   <option value="admin">Admin (Full Access)</option>
                 </select>
+                <select 
+                  value={newStaffDepartment}
+                  onChange={e => setNewStaffDepartment(e.target.value)}
+                  className="glass-input"
+                  style={{flex: 1}}
+                >
+                  <option value="All">All Departments</option>
+                  <option value="Immigration">Immigration</option>
+                  <option value="ESL">ESL</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Social Services">Social Services</option>
+                  <option value="General">General</option>
+                </select>
                 <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim() || !newStaffEmail.trim()} style={{padding: '0 16px', margin: 0}}>
                   {isAddingStaff ? 'Saving...' : (editingStaffId ? 'Update' : 'Add')}
                 </button>
@@ -1070,6 +1121,7 @@ function App() {
                     setNewStaffName('');
                     setNewStaffEmail('');
                     setNewStaffRole('tenant');
+                    setNewStaffDepartment('All');
                   }} className="btn-send-glass" style={{padding: '0 16px', margin: 0, background: 'rgba(255,255,255,0.1)'}}>
                     Cancel
                   </button>
@@ -1084,7 +1136,10 @@ function App() {
                 staffList.map(staff => (
                   <div key={staff.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
                     <div>
-                      <div style={{fontWeight: 'bold'}}>{staff.name} <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role || 'tenant'}</span></div>
+                      <div style={{fontWeight: 'bold'}}>{staff.name} 
+                        <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role || 'tenant'}</span>
+                        <span style={{fontSize: 10, padding: '2px 6px', background: 'rgba(16,185,129,0.2)', color: '#10b981', borderRadius: 10, marginLeft: 6}}>{staff.department || 'All'}</span>
+                      </div>
                       <div style={{fontSize: 12, opacity: 0.6}}>{staff.email || 'No email assigned'}</div>
                     </div>
                     <div style={{display: 'flex', gap: 6}}>
