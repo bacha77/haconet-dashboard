@@ -985,6 +985,53 @@ function App() {
             <h2>System Analytics</h2>
           </div>
           <div style={{padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap'}}>
+            {/* Compute avg response time on the fly */}
+            {(() => {
+              let totalTime = 0;
+              let responseCount = 0;
+              const messagesByNumber = {};
+              
+              messages.forEach(m => {
+                if (!messagesByNumber[m.sender_number]) messagesByNumber[m.sender_number] = [];
+                messagesByNumber[m.sender_number].push(m);
+              });
+
+              Object.values(messagesByNumber).forEach(thread => {
+                let waitingSince = null;
+                thread.forEach(msg => {
+                  if (msg.direction === 'inbound') {
+                    if (!waitingSince) waitingSince = new Date(msg.created_at);
+                  } else if (msg.direction === 'outbound') {
+                    if (waitingSince) {
+                      const outTime = new Date(msg.created_at);
+                      const diffMs = outTime - waitingSince;
+                      if (diffMs > 0 && diffMs < 1000 * 60 * 60 * 24 * 7) {
+                          totalTime += diffMs;
+                          responseCount++;
+                      }
+                      waitingSince = null;
+                    }
+                  }
+                });
+              });
+
+              let avgDisplay = "N/A";
+              if (responseCount > 0) {
+                const avgMs = totalTime / responseCount;
+                const avgMins = Math.round(avgMs / 60000);
+                if (avgMins < 60) avgDisplay = `${avgMins} mins`;
+                else avgDisplay = `${(avgMins / 60).toFixed(1)} hours`;
+              }
+
+              return (
+                <div className="analytics-card" style={{background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))', borderColor: 'rgba(16, 185, 129, 0.2)'}}>
+                  <h3 style={{color: '#10b981'}}>Avg Response Time</h3>
+                  <div className="stat-number" style={{color: '#10b981'}}>{avgDisplay}</div>
+                  <div style={{fontSize: 11, opacity: 0.6, marginTop: 4}}>Based on {responseCount} replies</div>
+                </div>
+              );
+            })()}
+
             <div className="analytics-card">
               <h3>Total Contacts</h3>
               <div className="stat-number">{Object.keys(contacts).length}</div>
