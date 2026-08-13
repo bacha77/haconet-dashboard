@@ -989,6 +989,7 @@ function App() {
             {(() => {
               let totalTime = 0;
               let responseCount = 0;
+              const staffTimes = {}; // { [staffName]: { totalTime, responseCount } }
               const messagesByNumber = {};
               
               messages.forEach(m => {
@@ -996,7 +997,10 @@ function App() {
                 messagesByNumber[m.sender_number].push(m);
               });
 
-              Object.values(messagesByNumber).forEach(thread => {
+              Object.entries(messagesByNumber).forEach(([num, thread]) => {
+                const assignedTo = contacts[num]?.assigned_to || 'Unassigned';
+                if (!staffTimes[assignedTo]) staffTimes[assignedTo] = { totalTime: 0, responseCount: 0 };
+                
                 let waitingSince = null;
                 thread.forEach(msg => {
                   if (msg.direction === 'inbound') {
@@ -1008,6 +1012,8 @@ function App() {
                       if (diffMs > 0 && diffMs < 1000 * 60 * 60 * 24 * 7) {
                           totalTime += diffMs;
                           responseCount++;
+                          staffTimes[assignedTo].totalTime += diffMs;
+                          staffTimes[assignedTo].responseCount++;
                       }
                       waitingSince = null;
                     }
@@ -1024,11 +1030,48 @@ function App() {
               }
 
               return (
-                <div className="analytics-card" style={{background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))', borderColor: 'rgba(16, 185, 129, 0.2)'}}>
-                  <h3 style={{color: '#10b981'}}>Avg Response Time</h3>
-                  <div className="stat-number" style={{color: '#10b981'}}>{avgDisplay}</div>
-                  <div style={{fontSize: 11, opacity: 0.6, marginTop: 4}}>Based on {responseCount} replies</div>
-                </div>
+                <>
+                  <div className="analytics-card" style={{background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))', borderColor: 'rgba(16, 185, 129, 0.2)'}}>
+                    <h3 style={{color: '#10b981'}}>Avg Response Time</h3>
+                    <div className="stat-number" style={{color: '#10b981'}}>{avgDisplay}</div>
+                    <div style={{fontSize: 11, opacity: 0.6, marginTop: 4}}>Based on {responseCount} replies</div>
+                  </div>
+                  
+                  {/* Break down by staff */}
+                  <div className="analytics-card" style={{width: '100%', maxWidth: '600px'}}>
+                    <h3>Avg Response by Staff</h3>
+                    <div className="dept-bars">
+                      {Object.entries(staffTimes)
+                        .filter(([staff, data]) => data.responseCount > 0 && staff !== 'Unassigned')
+                        .map(([staff, data]) => {
+                          const avgMs = data.totalTime / data.responseCount;
+                          const avgMins = Math.round(avgMs / 60000);
+                          const display = avgMins < 60 ? `${avgMins}m` : `${(avgMins / 60).toFixed(1)}h`;
+                          // calculate width relative to the overall average for a bar chart
+                          const globalAvgMs = responseCount > 0 ? (totalTime / responseCount) : 1;
+                          const ratio = Math.min(100, Math.max(10, (avgMs / globalAvgMs) * 50));
+                          
+                          return (
+                            <div key={staff} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
+                              <span style={{width: 120, fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8}}>{staff}</span>
+                              <div style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, height: 24, overflow: 'hidden'}}>
+                                <div style={{
+                                  width: `${ratio}%`,
+                                  backgroundColor: avgMs > globalAvgMs ? '#ef4444' : '#10b981', // red if slower than average, green if faster
+                                  height: '100%',
+                                  borderRadius: 4
+                                }}></div>
+                              </div>
+                              <span style={{marginLeft: 12, fontSize: 14, fontWeight: 'bold', width: 60, textAlign: 'right'}}>{display}</span>
+                            </div>
+                          );
+                      })}
+                      {Object.entries(staffTimes).filter(([staff, data]) => data.responseCount > 0 && staff !== 'Unassigned').length === 0 && (
+                        <div style={{fontSize: 13, opacity: 0.6, fontStyle: 'italic', marginTop: 10}}>No staff responses logged yet.</div>
+                      )}
+                    </div>
+                  </div>
+                </>
               );
             })()}
 
