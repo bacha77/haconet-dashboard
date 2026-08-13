@@ -11,6 +11,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userStaffName, setUserStaffName] = useState(null);
+  const [userDepartment, setUserDepartment] = useState('All');
   const [authLoading, setAuthLoading] = useState(true);
   const [loginError, setLoginError] = useState(false);
 
@@ -55,8 +56,6 @@ function App() {
 
   const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
   const messagesEndRef = useRef(null);
-  
-  const departments = ['All', 'Immigration', 'ESL', 'Cultural', 'Social Services', 'General'];
 
   useEffect(() => {
     // Auth Listener
