@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart, LogOut } from 'lucide-react';
+import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart, LogOut, Lock } from 'lucide-react';
 import './App.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -22,6 +22,7 @@ function App() {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isInternalNote, setIsInternalNote] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [staffFilter, setStaffFilter] = useState('All');
   
@@ -228,6 +229,7 @@ function App() {
       formData.append('to', selectedNumber);
       if (replyText.trim()) formData.append('body', replyText);
       if (selectedFile) formData.append('file', selectedFile);
+      if (isInternalNote) formData.append('is_internal', 'true');
 
       await fetch('https://haconet-twilio-phone.onrender.com/api/reply', {
         method: 'POST',
@@ -235,6 +237,7 @@ function App() {
       });
       setReplyText('');
       setSelectedFile(null);
+      setIsInternalNote(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
       console.error('Send error:', error);
@@ -681,9 +684,14 @@ function App() {
               
               <div className="messages-container">
                 {chatMessages.map(msg => (
-                  <div key={msg.id} className={`message-wrapper ${msg.direction}`}>
-                    <div className={`message-bubble ${msg.direction}`}>
-                      {msg.body && <p>{msg.body}</p>}
+                  <div key={msg.id} className={`message-wrapper ${msg.direction === 'internal_note' ? 'outbound internal_note' : msg.direction}`}>
+                    <div className={`message-bubble ${msg.direction === 'internal_note' ? 'outbound internal_note' : msg.direction}`}>
+                      {msg.body && (
+                        <p>
+                          {msg.direction === 'internal_note' && <Lock size={12} style={{marginRight: 6, opacity: 0.6}}/>}
+                          {msg.body}
+                        </p>
+                      )}
                       {msg.media_url && msg.media_type && msg.media_type.startsWith('audio/') && (
                         <audio controls src={`https://haconet-twilio-phone.onrender.com/api/media?url=${encodeURIComponent(msg.media_url)}`} className="audio-player" />
                       )}
@@ -812,13 +820,22 @@ function App() {
                     ));
                   })()}
                 </div>
-                <form className="chat-input-glass" onSubmit={handleSend}>
+                <form className="chat-input-glass" onSubmit={handleSend} style={{ backgroundColor: isInternalNote ? 'rgba(234, 179, 8, 0.15)' : undefined, border: isInternalNote ? '1px solid rgba(234, 179, 8, 0.4)' : undefined, position: 'relative' }}>
                   <input 
                     type="file" 
                     style={{ display: 'none' }} 
                     ref={fileInputRef} 
                     onChange={(e) => setSelectedFile(e.target.files[0])}
                   />
+                  <button 
+                    type="button" 
+                    className="btn-translate-outbound" 
+                    onClick={() => setIsInternalNote(!isInternalNote)}
+                    title="Toggle Internal Note"
+                    style={{ padding: '8px', background: isInternalNote ? 'rgba(234, 179, 8, 0.2)' : undefined, color: isInternalNote ? '#eab308' : undefined }}
+                  >
+                    <Lock size={18} />
+                  </button>
                   <button 
                     type="button" 
                     className="btn-translate-outbound" 
@@ -838,6 +855,9 @@ function App() {
                     {isTranslatingDraft ? '...' : '文 Creole'}
                   </button>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '12px' }}>
+                    {isInternalNote && (
+                      <div style={{ fontSize: '0.7rem', color: '#eab308', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 'bold', marginBottom: 2 }}>Internal Note (Hidden from client)</div>
+                    )}
                     {selectedFile && (
                       <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '4px' }}>
                         📎 {selectedFile.name} 
