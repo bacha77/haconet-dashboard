@@ -59,6 +59,7 @@ function App() {
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
   const [newMsgPhone, setNewMsgPhone] = useState('');
   const [newMsgText, setNewMsgText] = useState('');
+  const [newMsgType, setNewMsgType] = useState('sms');
   const [isSendingNewMsg, setIsSendingNewMsg] = useState(false);
 
   const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
@@ -306,7 +307,8 @@ function App() {
       }
 
       const formData = new FormData();
-      formData.append('to', `whatsapp:${formattedPhone}`);
+      const finalTo = newMsgType === 'whatsapp' ? `whatsapp:${formattedPhone}` : formattedPhone;
+      formData.append('to', finalTo);
       formData.append('body', newMsgText);
 
       await fetch('https://haconet-twilio-phone.onrender.com/api/reply', {
@@ -316,9 +318,10 @@ function App() {
       
       setNewMsgPhone('');
       setNewMsgText('');
+      setNewMsgType('sms');
       setShowNewMessageModal(false);
       
-      setSelectedNumber(`whatsapp:${formattedPhone}`);
+      setSelectedNumber(finalTo);
       setCurrentView('inbox');
     } catch (error) {
       console.error('Error sending new message:', error);
@@ -1384,18 +1387,31 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content-glass">
             <h2><MessageSquarePlus size={20} /> New Conversation</h2>
-            <p>Start a WhatsApp conversation with a new number.</p>
+            <p>Start an SMS or WhatsApp conversation with a new number.</p>
             <form onSubmit={handleNewMessage}>
-              <div style={{marginBottom: 16}}>
-                <label style={{display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.7}}>Phone Number (US +1 is auto-added if missing)</label>
-                <input 
-                  type="text" 
-                  value={newMsgPhone}
-                  onChange={(e) => setNewMsgPhone(e.target.value)}
-                  placeholder="e.g. 555-123-4567"
-                  className="glass-input"
-                  required
-                />
+              <div style={{display: 'flex', gap: 12, marginBottom: 16}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.7}}>Phone Number (US +1 is auto-added)</label>
+                  <input 
+                    type="text" 
+                    value={newMsgPhone}
+                    onChange={(e) => setNewMsgPhone(e.target.value)}
+                    placeholder="e.g. 555-123-4567"
+                    className="glass-input"
+                    required
+                  />
+                </div>
+                <div style={{width: '140px'}}>
+                  <label style={{display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.7}}>Method</label>
+                  <select 
+                    value={newMsgType}
+                    onChange={(e) => setNewMsgType(e.target.value)}
+                    className="glass-input"
+                  >
+                    <option value="sms">SMS Text</option>
+                    <option value="whatsapp">WhatsApp</option>
+                  </select>
+                </div>
               </div>
               <textarea 
                 value={newMsgText}
