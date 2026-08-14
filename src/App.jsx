@@ -311,10 +311,15 @@ function App() {
       formData.append('to', finalTo);
       formData.append('body', newMsgText);
 
-      await fetch('https://haconet-twilio-phone.onrender.com/api/reply', {
+      const res = await fetch('https://haconet-twilio-phone.onrender.com/api/reply', {
         method: 'POST',
         body: formData
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
       
       setNewMsgPhone('');
       setNewMsgText('');
@@ -325,7 +330,7 @@ function App() {
       setCurrentView('inbox');
     } catch (error) {
       console.error('Error sending new message:', error);
-      alert('Failed to send message.');
+      alert('Failed to send message: ' + error.message);
     } finally {
       setIsSendingNewMsg(false);
     }
