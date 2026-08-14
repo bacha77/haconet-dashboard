@@ -41,7 +41,7 @@ function App() {
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffEmail, setNewStaffEmail] = useState('');
   const [newStaffRole, setNewStaffRole] = useState('staff');
-  const [newStaffDepartment, setNewStaffDepartment] = useState('All');
+  const [newStaffDepartment, setNewStaffDepartment] = useState(['All']);
   const [editingStaffId, setEditingStaffId] = useState(null);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   
@@ -137,9 +137,13 @@ function App() {
         if (staffData) {
           setUserRole(staffData.role || 'pending');
           setUserStaffName(staffData.name);
-          setUserDepartment(staffData.department || 'All');
+          const depts = staffData.department || 'All';
+          setUserDepartment(depts);
           if (staffData.role !== 'admin') {
             setStaffFilter('My Tickets & Unassigned');
+            if (depts !== 'All') {
+              setDepartmentFilter(depts.split(',').map(d => d.trim())[0] || 'All');
+            }
           }
         } else {
           // If staff doesn't exist, insert them as pending
@@ -196,8 +200,12 @@ function App() {
     // Status filter
     const statusMatch = filter === 'all' ? true : status === filter;
     
+    const userDepts = userDepartment === 'All' ? ['All'] : userDepartment.split(',').map(d => d.trim());
+
     // Department filter
-    const deptMatch = departmentFilter === 'All' ? true : dept === departmentFilter;
+    const deptMatch = departmentFilter === 'All' 
+        ? (userRole === 'admin' || userDepts.includes('All') || userDepts.includes(dept)) 
+        : dept === departmentFilter;
 
     // Staff filter
     const assignedTo = contacts[num]?.assigned_to || null;
@@ -207,7 +215,7 @@ function App() {
       staffMatch = staffFilter === 'All' ? true : (staffFilter === 'Unassigned' ? !assignedTo : assignedTo === staffFilter);
     } else {
       const isMyTicket = assignedTo === userStaffName;
-      const isUnassignedForMyDept = !assignedTo && (userDepartment === 'All' || dept === userDepartment);
+      const isUnassignedForMyDept = !assignedTo && (userDepts.includes('All') || userDepts.includes(dept));
       
       if (staffFilter === 'My Tickets & Unassigned') {
          staffMatch = isMyTicket || isUnassignedForMyDept;
@@ -343,7 +351,7 @@ function App() {
           name: newStaffName.trim(),
           email: newStaffEmail.trim(),
           role: newStaffRole,
-          department: newStaffDepartment
+          department: newStaffDepartment.length ? newStaffDepartment.join(', ') : 'All'
         }).eq('id', editingStaffId).select();
         
         if (error) throw error;
@@ -355,7 +363,7 @@ function App() {
           name: newStaffName.trim(),
           email: newStaffEmail.trim(),
           role: newStaffRole,
-          department: newStaffDepartment
+          department: newStaffDepartment.length ? newStaffDepartment.join(', ') : 'All'
         }]).select();
         
         if (error) throw error;
@@ -367,7 +375,7 @@ function App() {
       setNewStaffName('');
       setNewStaffEmail('');
       setNewStaffRole('staff');
-      setNewStaffDepartment('All');
+      setNewStaffDepartment(['All']);
       setEditingStaffId(null);
     } catch (error) {
       console.error('Add/Update staff error:', error);
@@ -382,7 +390,7 @@ function App() {
     setNewStaffName(staff.name || '');
     setNewStaffEmail(staff.email || '');
     setNewStaffRole(staff.role || 'staff');
-    setNewStaffDepartment(staff.department || 'All');
+    setNewStaffDepartment(staff.department ? staff.department.split(',').map(d => d.trim()) : ['All']);
   };
 
   const handleDeleteStaff = async (id) => {
@@ -548,26 +556,32 @@ function App() {
         </div>
         
         <div className="nav-tabs">
-          {departments.map(dept => (
-            <button 
-              key={dept} 
-              className={`tab-btn ${departmentFilter === dept ? 'active' : ''}`}
-              onClick={() => {
-                setDepartmentFilter(dept);
-                setSelectedNumber(null); // Clear selection on dept switch
-              }}
-            >
-              {dept}
-            </button>
-          ))}
+          {departments.map(dept => {
+            const userDepts = userDepartment === 'All' ? ['All'] : userDepartment.split(',').map(d => d.trim());
+            if (userRole !== 'admin' && !userDepts.includes('All') && !userDepts.includes(dept) && dept !== 'All') return null;
+            return (
+              <button 
+                key={dept} 
+                className={`tab-btn ${departmentFilter === dept ? 'active' : ''}`}
+                onClick={() => {
+                  setDepartmentFilter(dept);
+                  setSelectedNumber(null); // Clear selection on dept switch
+                }}
+              >
+                {dept}
+              </button>
+            );
+          })}
         </div>
         
         <div className="nav-actions">
           {currentView === 'inbox' ? (
             <>
-              <button className="btn-secondary" onClick={() => setShowStaffModal(true)} style={{marginRight: 8}}>
-                <User size={16} /> Manage Staff
-              </button>
+              {userRole === 'admin' && (
+                <button className="btn-secondary" onClick={() => setShowStaffModal(true)} style={{marginRight: 8}}>
+                  <User size={16} /> Manage Staff
+                </button>
+              )}
               <button className="btn-secondary" onClick={() => setCurrentView('analytics')} style={{marginRight: 8}}>
                 <BarChart size={16} /> Analytics
               </button>
@@ -1242,19 +1256,26 @@ function App() {
                     <option value="staff">Haconet Staff (Restricted)</option>
                     <option value="admin">Admin (Full Access)</option>
                   </select>
-                <select 
-                  value={newStaffDepartment}
-                  onChange={e => setNewStaffDepartment(e.target.value)}
-                  className="glass-input"
-                  style={{flex: 1}}
-                >
-                  <option value="All">All Departments</option>
-                  <option value="Immigration">Immigration</option>
-                  <option value="ESL">ESL</option>
-                  <option value="Cultural">Cultural</option>
-                  <option value="Social Services">Social Services</option>
-                  <option value="General">General</option>
-                </select>
+                <div className="glass-input" style={{flex: 1, padding: '4px 8px', display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '36px', alignItems: 'center'}}>
+                  {['All', 'Immigration', 'ESL', 'Cultural', 'Social Services', 'General'].map(dept => (
+                    <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={newStaffDepartment.includes(dept)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            if (dept === 'All') setNewStaffDepartment(['All']);
+                            else setNewStaffDepartment(newStaffDepartment.filter(d => d !== 'All').concat(dept));
+                          } else {
+                            if (newStaffDepartment.length === 1) setNewStaffDepartment(['All']); // prevent empty
+                            else setNewStaffDepartment(newStaffDepartment.filter(d => d !== dept));
+                          }
+                        }}
+                      />
+                      {dept}
+                    </label>
+                  ))}
+                </div>
                 <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim() || !newStaffEmail.trim()} style={{padding: '0 16px', margin: 0}}>
                   {isAddingStaff ? 'Saving...' : (editingStaffId ? 'Update' : 'Add')}
                 </button>
@@ -1264,7 +1285,7 @@ function App() {
                     setNewStaffName('');
                     setNewStaffEmail('');
                     setNewStaffRole('staff');
-                    setNewStaffDepartment('All');
+                    setNewStaffDepartment(['All']);
                   }} className="btn-send-glass" style={{padding: '0 16px', margin: 0, background: 'rgba(255,255,255,0.1)'}}>
                     Cancel
                   </button>
