@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart, LogOut, Lock } from 'lucide-react';
+import { Send, User, CheckCircle, Clock, Volume2, Megaphone, Info, Users, Download, ArrowLeft, Paperclip, BarChart, LogOut, Lock, MessageSquarePlus } from 'lucide-react';
 import './App.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -54,6 +54,12 @@ function App() {
   const [translations, setTranslations] = useState({});
   const [translatingId, setTranslatingId] = useState(null);
   const [isTranslatingDraft, setIsTranslatingDraft] = useState(false);
+
+  // New Message State
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [newMsgPhone, setNewMsgPhone] = useState('');
+  const [newMsgText, setNewMsgText] = useState('');
+  const [isSendingNewMsg, setIsSendingNewMsg] = useState(false);
 
   const audioRef = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
   const messagesEndRef = useRef(null);
@@ -282,6 +288,43 @@ function App() {
       alert('Failed to send broadcast');
     } finally {
       setIsBroadcasting(false);
+    }
+  };
+
+  const handleNewMessage = async (e) => {
+    e.preventDefault();
+    if (!newMsgPhone.trim() || !newMsgText.trim()) return;
+    setIsSendingNewMsg(true);
+    
+    try {
+      let formattedPhone = newMsgPhone.replace(/\D/g, ''); // strip non-digits
+      if (formattedPhone.length === 10) {
+        formattedPhone = '1' + formattedPhone;
+      }
+      if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+' + formattedPhone;
+      }
+
+      const formData = new FormData();
+      formData.append('to', `whatsapp:${formattedPhone}`);
+      formData.append('body', newMsgText);
+
+      await fetch('https://haconet-twilio-phone.onrender.com/api/reply', {
+        method: 'POST',
+        body: formData
+      });
+      
+      setNewMsgPhone('');
+      setNewMsgText('');
+      setShowNewMessageModal(false);
+      
+      setSelectedNumber(`whatsapp:${formattedPhone}`);
+      setCurrentView('inbox');
+    } catch (error) {
+      console.error('Error sending new message:', error);
+      alert('Failed to send message.');
+    } finally {
+      setIsSendingNewMsg(false);
     }
   };
 
@@ -594,6 +637,9 @@ function App() {
               <ArrowLeft size={16} /> Back to Inbox
             </button>
           )}
+          <button className="btn-send-glass" onClick={() => setShowNewMessageModal(true)} style={{marginRight: 8, padding: '6px 12px', fontSize: 13, height: 'auto', display: 'flex', alignItems: 'center'}}>
+            <MessageSquarePlus size={16} style={{marginRight: 6}} /> New Message
+          </button>
           <button className="btn-broadcast-header" onClick={() => setShowBroadcast(true)} style={{marginRight: 8}}>
             <Megaphone size={16} /> Broadcast
           </button>
@@ -1329,6 +1375,42 @@ function App() {
             <div className="modal-actions" style={{marginTop: 20}}>
               <button type="button" className="btn-cancel-glass" onClick={() => setShowStaffModal(false)} style={{width: '100%'}}>Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW MESSAGE MODAL */}
+      {showNewMessageModal && (
+        <div className="modal-overlay">
+          <div className="modal-content-glass">
+            <h2><MessageSquarePlus size={20} /> New Conversation</h2>
+            <p>Start a WhatsApp conversation with a new number.</p>
+            <form onSubmit={handleNewMessage}>
+              <div style={{marginBottom: 16}}>
+                <label style={{display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.7}}>Phone Number (US +1 is auto-added if missing)</label>
+                <input 
+                  type="text" 
+                  value={newMsgPhone}
+                  onChange={(e) => setNewMsgPhone(e.target.value)}
+                  placeholder="e.g. 555-123-4567"
+                  className="glass-input"
+                  required
+                />
+              </div>
+              <textarea 
+                value={newMsgText}
+                onChange={(e) => setNewMsgText(e.target.value)}
+                placeholder="Type your first message here..."
+                rows="4"
+                required
+              />
+              <div className="modal-actions">
+                <button type="button" className="btn-cancel-glass" onClick={() => setShowNewMessageModal(false)}>Cancel</button>
+                <button type="submit" className="btn-send-glass" disabled={isSendingNewMsg || !newMsgPhone.trim() || !newMsgText.trim()}>
+                  {isSendingNewMsg ? 'Sending...' : 'Send Message'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
