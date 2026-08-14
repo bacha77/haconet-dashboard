@@ -40,7 +40,7 @@ function App() {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffEmail, setNewStaffEmail] = useState('');
-  const [newStaffRole, setNewStaffRole] = useState('tenant');
+  const [newStaffRole, setNewStaffRole] = useState('staff');
   const [newStaffDepartment, setNewStaffDepartment] = useState('All');
   const [editingStaffId, setEditingStaffId] = useState(null);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
@@ -135,16 +135,24 @@ function App() {
       try {
         const { data: staffData, error } = await supabase.from('staff').select('*').eq('email', session.user.email).single();
         if (staffData) {
-          setUserRole(staffData.role || 'tenant');
+          setUserRole(staffData.role || 'pending');
           setUserStaffName(staffData.name);
           setUserDepartment(staffData.department || 'All');
           if (staffData.role !== 'admin') {
             setStaffFilter('My Tickets & Unassigned');
           }
         } else {
-          // If staff doesn't exist, assume they are a new tenant
-          setUserRole('tenant');
-          setUserStaffName(''); 
+          // If staff doesn't exist, insert them as pending
+          const newName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+          const { data: newStaff, error: insertError } = await supabase.from('staff').insert([{
+            name: newName,
+            email: session.user.email,
+            role: 'pending',
+            department: 'All'
+          }]).select().single();
+          
+          setUserRole('pending');
+          setUserStaffName(newStaff ? newStaff.name : newName); 
           setUserDepartment('All');
           setStaffFilter('My Tickets & Unassigned');
         }
@@ -358,7 +366,7 @@ function App() {
       
       setNewStaffName('');
       setNewStaffEmail('');
-      setNewStaffRole('tenant');
+      setNewStaffRole('staff');
       setNewStaffDepartment('All');
       setEditingStaffId(null);
     } catch (error) {
@@ -373,7 +381,7 @@ function App() {
     setEditingStaffId(staff.id);
     setNewStaffName(staff.name || '');
     setNewStaffEmail(staff.email || '');
-    setNewStaffRole(staff.role || 'tenant');
+    setNewStaffRole(staff.role || 'staff');
     setNewStaffDepartment(staff.department || 'All');
   };
 
@@ -505,6 +513,28 @@ function App() {
   if (!userRole) {
     return <div style={{display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: 'white'}}>Loading Profile...</div>;
   }
+
+  // Pending Approval Screen
+  if (userRole === 'pending') {
+    return (
+      <div className="login-container">
+        <div className="login-box" style={{textAlign: 'center', padding: '40px'}}>
+          <img src={`${import.meta.env.BASE_URL}logo.jpg.jpg`} alt="Haconet Logo" className="login-logo" style={{margin: '0 auto 20px'}} />
+          <h2>Pending Approval</h2>
+          <p style={{marginTop: '20px', color: '#94a3b8'}}>Your account has been created but is pending administrator approval.</p>
+          <p style={{marginTop: '10px', color: '#94a3b8'}}>Please contact an admin to grant you access to the dashboard.</p>
+          <button 
+            className="btn-secondary" 
+            style={{marginTop: 30, color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)'}}
+            onClick={handleLogout}
+          >
+            <LogOut size={16} style={{marginRight: '6px'}}/> Logout
+          </button>
+        </div>
+      </div>
+    );
+  }
+
 
 
   return (
@@ -1208,7 +1238,8 @@ function App() {
                     className="glass-input"
                     style={{flex: 1}}
                   >
-                    <option value="tenant">Haconet Staff (Restricted)</option>
+                    <option value="pending">Pending Approval</option>
+                    <option value="staff">Haconet Staff (Restricted)</option>
                     <option value="admin">Admin (Full Access)</option>
                   </select>
                 <select 
@@ -1232,7 +1263,7 @@ function App() {
                     setEditingStaffId(null);
                     setNewStaffName('');
                     setNewStaffEmail('');
-                    setNewStaffRole('tenant');
+                    setNewStaffRole('staff');
                     setNewStaffDepartment('All');
                   }} className="btn-send-glass" style={{padding: '0 16px', margin: 0, background: 'rgba(255,255,255,0.1)'}}>
                     Cancel
@@ -1250,7 +1281,7 @@ function App() {
                   <div key={staff.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
                     <div>
                       <div style={{fontWeight: 'bold'}}>{staff.name} 
-                        <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)', borderRadius: 10, marginLeft: 6}}>{staff.role === 'admin' ? 'admin' : 'staff'}</span>
+                        <span style={{fontSize: 10, padding: '2px 6px', background: staff.role === 'admin' ? 'rgba(239,68,68,0.2)' : (staff.role === 'pending' ? 'rgba(234,179,8,0.2)' : 'rgba(59,130,246,0.2)'), color: staff.role === 'pending' ? '#eab308' : 'white', borderRadius: 10, marginLeft: 6}}>{staff.role}</span>
                         <span style={{fontSize: 10, padding: '2px 6px', background: 'rgba(16,185,129,0.2)', color: '#10b981', borderRadius: 10, marginLeft: 6}}>{staff.department || 'All'}</span>
                       </div>
                       <div style={{fontSize: 12, opacity: 0.6}}>{staff.email || 'No email assigned'}</div>
