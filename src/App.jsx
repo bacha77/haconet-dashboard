@@ -495,7 +495,7 @@ function App() {
 
   const chatMessages = messages.filter(m => m.sender_number === selectedNumber);
 
-  const departments = ['All', 'Immigration', 'ESL', 'Health', 'Cultural', 'Social Services', 'General'];
+  const departments = ['All', 'Immigration', 'Educational Program', 'Health', 'Cultural', 'Social Services', 'General'];
   
   const quickReplies = [
     "Biwo nou louvri lendi rive vandredi, soti 9è nan maten pou rive 5è nan aswè. (Office hours)",
@@ -503,7 +503,7 @@ function App() {
     "Èske ou ka ban nou non konplè w ak dat nesans ou tanpri? (Ask for Name/DOB)",
     "Tanpri, èske w ka voye yon mesaj vwa pou eksplike ka w la pi byen? (Ask for Voice Note)",
     "Youn nan ajan imigrasyon nou yo ap kontakte w byento. (Immigration Follow-up)",
-    "Kilè ou ta renmen pran yon randevou pou klas angle a? (ESL Appointment)",
+    "Kilè ou ta renmen pran yon randevou pou Pwogram Edikatif la? (Educational Program Appointment)",
     "Pou kesyon sante a, èske ou gen asirans medikal? (Health Insurance Ask)",
     "Mèsi paske w kontakte Haconet! Kijan nou ka ede w jodi a? (Greeting)"
   ];
@@ -724,9 +724,16 @@ function App() {
                       <span className="paused-dot" title="Bot Paused"></span>
                     )}
                   </div>
-                  <div className="contact-preview">
-                    {contacts[number]?.first_name && <span style={{fontSize: '10px', opacity: 0.6, display: 'block'}}>{number}</span>}
-                    {messages.filter(m => m.sender_number === number).slice(-1)[0]?.body || 'Media attached'}
+                  <div className="contact-preview" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%'}}>
+                      {contacts[number]?.first_name && <span style={{fontSize: '10px', opacity: 0.6, display: 'block'}}>{number}</span>}
+                      {messages.filter(m => m.sender_number === number).slice(-1)[0]?.body || 'Media attached'}
+                    </div>
+                    {contacts[number]?.last_message_at && (
+                      <span style={{fontSize: '10px', opacity: 0.6, whiteSpace: 'nowrap'}}>
+                        {new Date(contacts[number].last_message_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -838,7 +845,7 @@ function App() {
                         )}
                         <span className="timestamp">
                           <Clock size={10} style={{ marginRight: '4px' }}/>
-                          {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {new Date(msg.created_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}
                         </span>
                       </div>
                     </div>
@@ -863,15 +870,15 @@ function App() {
                         "What country did you immigrate from?",
                         "We have lawyers available for consultation next week."
                       ];
-                    } else if (dept.includes('esl')) {
+                    } else if (dept.includes('educational')) {
                       replies = [
                         "Our address is 2020 Brice Rd, Reynoldsburg, OH 43068.",
                         "What is your current English speaking level (Beginner/Intermediate/Advanced)?",
-                        "Our ESL classes are held on Tuesday and Thursday evenings.",
-                        "Would you like to register for the next ESL session?",
-                        "Do you need childcare during ESL classes?",
-                        "Have you taken an ESL assessment test with us before?",
-                        "Our English classes are entirely free of charge."
+                        "Our Educational Program classes are held on Tuesday and Thursday evenings.",
+                        "Would you like to register for the next Educational Program session?",
+                        "Do you need childcare during Educational Program classes?",
+                        "Have you taken an Educational Program assessment test with us before?",
+                        "Our Educational Program is entirely free of charge."
                       ];
                     } else if (dept.includes('health')) {
                       replies = [
@@ -1299,52 +1306,56 @@ function App() {
                   className="glass-input"
                   required
                 />
-                <div style={{display: 'flex', gap: 8}}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
                   <select 
                     value={newStaffRole}
                     onChange={e => setNewStaffRole(e.target.value)}
                     className="glass-input"
-                    style={{flex: 1}}
                   >
                     <option value="pending">Pending Approval</option>
                     <option value="staff">Haconet Staff (Restricted)</option>
                     <option value="admin">Admin (Full Access)</option>
                   </select>
-                <div className="glass-input" style={{flex: 1, padding: '4px 8px', display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '36px', alignItems: 'center'}}>
-                  {['All', 'Immigration', 'ESL', 'Cultural', 'Social Services', 'General'].map(dept => (
-                    <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={newStaffDepartment.includes(dept)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            if (dept === 'All') setNewStaffDepartment(['All']);
-                            else setNewStaffDepartment(newStaffDepartment.filter(d => d !== 'All').concat(dept));
-                          } else {
-                            if (newStaffDepartment.length === 1) setNewStaffDepartment(['All']); // prevent empty
-                            else setNewStaffDepartment(newStaffDepartment.filter(d => d !== dept));
-                          }
-                        }}
-                      />
-                      {dept}
-                    </label>
-                  ))}
+                  
+                  <div className="glass-input" style={{padding: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center'}}>
+                    <span style={{fontSize: 12, opacity: 0.7, width: '100%'}}>Departments:</span>
+                    {['All', 'Immigration', 'Educational Program', 'Cultural', 'Social Services', 'General'].map(dept => (
+                      <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={newStaffDepartment.includes(dept)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              if (dept === 'All') setNewStaffDepartment(['All']);
+                              else setNewStaffDepartment(newStaffDepartment.filter(d => d !== 'All').concat(dept));
+                            } else {
+                              if (newStaffDepartment.length === 1) setNewStaffDepartment(['All']); // prevent empty
+                              else setNewStaffDepartment(newStaffDepartment.filter(d => d !== dept));
+                            }
+                          }}
+                        />
+                        {dept}
+                      </label>
+                    ))}
+                  </div>
+                  
+                  <div style={{display: 'flex', gap: 8}}>
+                    <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim() || !newStaffEmail.trim()} style={{flex: 1, padding: '10px 16px'}}>
+                      {isAddingStaff ? 'Saving...' : (editingStaffId ? 'Update' : 'Add Staff')}
+                    </button>
+                    {editingStaffId && (
+                      <button type="button" onClick={() => {
+                        setEditingStaffId(null);
+                        setNewStaffName('');
+                        setNewStaffEmail('');
+                        setNewStaffRole('staff');
+                        setNewStaffDepartment(['All']);
+                      }} className="btn-send-glass" style={{flex: 1, padding: '10px 16px', background: 'rgba(255,255,255,0.1)'}}>
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button type="submit" className="btn-send-glass" disabled={isAddingStaff || !newStaffName.trim() || !newStaffEmail.trim()} style={{padding: '0 16px', margin: 0}}>
-                  {isAddingStaff ? 'Saving...' : (editingStaffId ? 'Update' : 'Add')}
-                </button>
-                {editingStaffId && (
-                  <button type="button" onClick={() => {
-                    setEditingStaffId(null);
-                    setNewStaffName('');
-                    setNewStaffEmail('');
-                    setNewStaffRole('staff');
-                    setNewStaffDepartment(['All']);
-                  }} className="btn-send-glass" style={{padding: '0 16px', margin: 0, background: 'rgba(255,255,255,0.1)'}}>
-                    Cancel
-                  </button>
-                )}
-              </div>
               </form>
             </div>
 
