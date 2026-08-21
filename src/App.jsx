@@ -495,7 +495,7 @@ function App() {
 
   const chatMessages = messages.filter(m => m.sender_number === selectedNumber);
 
-  const departments = ['All', 'Immigration', 'Educational Program', 'Health', 'Cultural', 'Social Services', 'General'];
+  const departments = ['All', 'Immigration', 'Educational Programs', 'Health', 'Cultural', 'Social Services', 'General'];
   
   const quickReplies = [
     "Biwo nou louvri lendi rive vandredi, soti 9è nan maten pou rive 5è nan aswè. (Office hours)",
@@ -503,7 +503,7 @@ function App() {
     "Èske ou ka ban nou non konplè w ak dat nesans ou tanpri? (Ask for Name/DOB)",
     "Tanpri, èske w ka voye yon mesaj vwa pou eksplike ka w la pi byen? (Ask for Voice Note)",
     "Youn nan ajan imigrasyon nou yo ap kontakte w byento. (Immigration Follow-up)",
-    "Kilè ou ta renmen pran yon randevou pou Pwogram Edikatif la? (Educational Program Appointment)",
+    "Kilè ou ta renmen pran yon randevou pou Pwogram Edikatif la? (Educational Programs Appointment)",
     "Pou kesyon sante a, èske ou gen asirans medikal? (Health Insurance Ask)",
     "Mèsi paske w kontakte Haconet! Kijan nou ka ede w jodi a? (Greeting)"
   ];
@@ -874,11 +874,11 @@ function App() {
                       replies = [
                         "Our address is 2020 Brice Rd, Reynoldsburg, OH 43068.",
                         "What is your current English speaking level (Beginner/Intermediate/Advanced)?",
-                        "Our Educational Program classes are held on Tuesday and Thursday evenings.",
-                        "Would you like to register for the next Educational Program session?",
-                        "Do you need childcare during Educational Program classes?",
-                        "Have you taken an Educational Program assessment test with us before?",
-                        "Our Educational Program is entirely free of charge."
+                        "Our Educational Programs classes are held on Tuesday and Thursday evenings.",
+                        "Would you like to register for the next Educational Programs session?",
+                        "Do you need childcare during Educational Programs classes?",
+                        "Have you taken an Educational Programs assessment test with us before?",
+                        "Our Educational Programs is entirely free of charge."
                       ];
                     } else if (dept.includes('health')) {
                       replies = [
@@ -1319,7 +1319,7 @@ function App() {
                   
                   <div className="glass-input" style={{padding: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center'}}>
                     <span style={{fontSize: 12, opacity: 0.7, width: '100%'}}>Departments:</span>
-                    {['All', 'Immigration', 'Educational Program', 'Cultural', 'Social Services', 'General'].map(dept => (
+                    {['All', 'Immigration', 'Educational Programs', 'Cultural', 'Social Services', 'General'].map(dept => (
                       <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
