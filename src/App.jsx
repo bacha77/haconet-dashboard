@@ -1159,7 +1159,7 @@ function App() {
       {/* ANALYTICS VIEW */}
       {currentView === 'analytics' && (
         <div className="directory-overlay" style={{ background: 'var(--bg-dark)', padding: '32px', overflowY: 'auto' }}>
-          <div className="directory-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '32px' }}>
+          <div className="directory-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '32px' }}>
             <div>
               <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#f8fafc' }}>
                 Community Impact & Analytics
@@ -1168,6 +1168,42 @@ function App() {
                 Tracking our reach and engagement across Haconet's non-profit services.
               </p>
             </div>
+            <button 
+              onClick={() => {
+                const dataRows = messages.filter(m => m.direction === 'inbound').map(m => {
+                  let contact = contacts[m.sender_number];
+                  const isImportedCall = m.body?.startsWith('Call log: ');
+                  if (isImportedCall) {
+                    const sid = m.body.replace('Call log: ', '');
+                    const matchingContactKey = Object.keys(contacts).find(k => k.includes(sid));
+                    if (matchingContactKey) {
+                      contact = contacts[matchingContactKey];
+                    }
+                  }
+                  const dept = contact?.department || 'General';
+                  const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : (m.sender_number.includes('_') ? m.sender_number.split('_')[0] : m.sender_number);
+                  const isCall = m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call');
+                  
+                  const type = isCall ? 'CALL' : 'TEXT';
+                  const date = new Date(m.created_at).toLocaleString();
+                  const text = (isCall && (!m.body || m.body.trim() === '' || isImportedCall)) ? 'Phone Call' : m.body;
+
+                  return `"${date}","${type}","${name}","${dept}","${(text||'').replace(/"/g, '""')}"`;
+                });
+
+                const csvContent = ["Date,Type,Sender,Department,Message", ...dataRows].join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "haconet_analytics.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Export to CSV
+            </button>
           </div>
           
           {/* Key Metrics Row */}
