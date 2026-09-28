@@ -22,6 +22,7 @@ function App() {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [editingIntake, setEditingIntake] = useState(null);
+  const [intakeSearch, setIntakeSearch] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('All');
@@ -481,13 +482,17 @@ function App() {
     e.preventDefault();
     if (!editingIntake) return;
     try {
+      const finalNotes = editingIntake.staff_member 
+        ? `[Staff: ${editingIntake.staff_member}]\n\n${editingIntake.notes || ''}`.trim()
+        : editingIntake.notes;
+
       const { error } = await supabase.from('contacts').upsert({
         phone_number: editingIntake.phone_number,
         first_name: editingIntake.first_name,
         last_name: editingIntake.last_name,
         department: editingIntake.department,
         status: editingIntake.status,
-        notes: editingIntake.notes
+        notes: finalNotes
       });
       if (error) throw error;
       setContacts(prev => ({ ...prev, [editingIntake.phone_number]: editingIntake }));
@@ -1144,8 +1149,15 @@ function App() {
               </p>
             </div>
             {userRole !== 'volunteer' && (
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => setEditingIntake({ isNew: true, phone_number: '', first_name: '', last_name: '', department: userDepartment === 'All' ? 'General' : userDepartment.split(',')[0].trim(), status: 'unread', notes: '' })} style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <input 
+                  type="text" 
+                  placeholder="Search Name or Phone..." 
+                  value={intakeSearch}
+                  onChange={e => setIntakeSearch(e.target.value)}
+                  style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white', width: '220px' }}
+                />
+                <button onClick={() => setEditingIntake({ isNew: true, phone_number: '', first_name: '', last_name: '', department: userDepartment === 'All' ? 'General' : userDepartment.split(',')[0].trim(), status: 'unread', notes: '', staff_member: '' })} style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
                   <Users size={18} /> + New Walk-in
                 </button>
                 <button onClick={exportToCSV} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1170,8 +1182,16 @@ function App() {
                 {Object.values(contacts)
                   .filter(c => {
                     const userDepts = userDepartment === 'All' ? ['All'] : userDepartment.split(',').map(d => d.trim());
-                    if (userRole === 'admin' || userDepts.includes('All')) return true;
-                    return userDepts.includes(c.department);
+                    if (userRole !== 'admin' && !userDepts.includes('All') && !userDepts.includes(c.department)) return false;
+                    
+                    if (intakeSearch.trim() !== '') {
+                      const searchLower = intakeSearch.toLowerCase();
+                      const fullName = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
+                      if (!fullName.includes(searchLower) && !(c.phone_number || '').toLowerCase().includes(searchLower)) {
+                        return false;
+                      }
+                    }
+                    return true;
                   })
                   .map(contact => {
                     let statusBadge = { bg: 'rgba(239,68,68,0.2)', color: '#ef4444', text: 'Needs Help' };
@@ -1196,7 +1216,19 @@ function App() {
                         </td>
                         <td style={{ padding: '16px 24px' }}>
                           <button 
-                            onClick={() => setEditingIntake({ ...contact })}
+                            onClick={() => {
+                              const initialNotes = contact.notes || '';
+                              let parsedStaff = '';
+                              let actualNotes = initialNotes;
+                              if (initialNotes.startsWith('[Staff: ')) {
+                                const endBracket = initialNotes.indexOf(']');
+                                if (endBracket !== -1) {
+                                  parsedStaff = initialNotes.substring(8, endBracket);
+                                  actualNotes = initialNotes.substring(endBracket + 1).trim();
+                                }
+                              }
+                              setEditingIntake({ ...contact, staff_member: parsedStaff, notes: actualNotes });
+                            }}
                             style={{ padding: '6px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
                             Update Intake
                           </button>
@@ -1255,17 +1287,32 @@ function App() {
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Department</label>
-                    <select 
-                      value={editingIntake.department || 'General'}
-                      onChange={e => setEditingIntake({...editingIntake, department: e.target.value})}
-                      style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
-                    >
-                      {departments.filter(d => d !== 'All').map(d => (
-                        <option key={d} value={d} style={{color: 'black'}}>{d}</option>
-                      ))}
-                    </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Department</label>
+                      <select 
+                        value={editingIntake.department || 'General'}
+                        onChange={e => setEditingIntake({...editingIntake, department: e.target.value})}
+                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                      >
+                        {departments.filter(d => d !== 'All').map(d => (
+                          <option key={d} value={d} style={{color: 'black'}}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Assigned Staff Member</label>
+                      <select 
+                        value={editingIntake.staff_member || ''}
+                        onChange={e => setEditingIntake({...editingIntake, staff_member: e.target.value})}
+                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                      >
+                        <option value="" style={{color: 'black'}}>-- Select Staff --</option>
+                        {staffList.map(s => (
+                          <option key={s.id} value={s.name || s.email} style={{color: 'black'}}>{s.name || s.email}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div style={{ marginBottom: '16px' }}>
