@@ -1144,9 +1144,14 @@ function App() {
               </p>
             </div>
             {userRole !== 'volunteer' && (
-              <button onClick={exportToCSV} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Download size={18} /> Export List
-              </button>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => setEditingIntake({ isNew: true, phone_number: '', first_name: '', last_name: '', department: userDepartment === 'All' ? 'General' : userDepartment.split(',')[0].trim(), status: 'unread', notes: '' })} style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                  <Users size={18} /> + New Walk-in
+                </button>
+                <button onClick={exportToCSV} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Download size={18} /> Export List
+                </button>
+              </div>
             )}
           </div>
 
@@ -1155,7 +1160,7 @@ function App() {
               <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)', textAlign: 'left' }}>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Client Name</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Phone Number</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Phone / ID</th>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Department</th>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Status</th>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Actions</th>
@@ -1214,8 +1219,21 @@ function App() {
           {editingIntake && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
               <div style={{ background: '#1e293b', width: '500px', borderRadius: '16px', padding: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'white', marginBottom: '24px' }}>Update Client Intake</h3>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'white', marginBottom: '24px' }}>{editingIntake.isNew ? 'New Manual Intake' : 'Update Client Intake'}</h3>
                 <form onSubmit={handleSaveIntake}>
+                  {editingIntake.isNew && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Phone Number or ID</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. 614-555-0192 or WalkIn-John"
+                        value={editingIntake.phone_number || ''} 
+                        onChange={e => setEditingIntake({...editingIntake, phone_number: e.target.value})}
+                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                      />
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     <div>
                       <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>First Name</label>
