@@ -21,6 +21,7 @@ function App() {
   const [staffList, setStaffList] = useState([]);
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [editingIntake, setEditingIntake] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('All');
@@ -476,6 +477,27 @@ function App() {
     }
   };
 
+  const handleSaveIntake = async (e) => {
+    e.preventDefault();
+    if (!editingIntake) return;
+    try {
+      const { error } = await supabase.from('contacts').upsert({
+        phone_number: editingIntake.phone_number,
+        first_name: editingIntake.first_name,
+        last_name: editingIntake.last_name,
+        department: editingIntake.department,
+        status: editingIntake.status,
+        notes: editingIntake.notes
+      });
+      if (error) throw error;
+      setContacts(prev => ({ ...prev, [editingIntake.phone_number]: editingIntake }));
+      setEditingIntake(null);
+    } catch (err) {
+      console.error('Error saving intake:', err);
+      alert('Failed to save intake.');
+    }
+  };
+
   const handleTranslate = async (msgId, text, toLang) => {
     if (!text) return;
     setTranslatingId(msgId);
@@ -657,7 +679,7 @@ function App() {
                 <BarChart size={16} /> Analytics
               </button>
               <button className="btn-secondary" onClick={() => setCurrentView('directory')}>
-                <Users size={16} /> Contacts Directory
+                <Users size={16} /> Client Intakes
               </button>
             </>
           ) : (
@@ -1111,48 +1133,155 @@ function App() {
 
       {/* CONTACTS DIRECTORY OVERLAY */}
       {currentView === 'directory' && (
-        <div className="directory-overlay">
-          <div className="directory-header">
-            <h2>Contacts Directory</h2>
+        <div className="directory-overlay" style={{ background: 'var(--bg-dark)', padding: '32px', overflowY: 'auto' }}>
+          <div className="directory-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#f8fafc' }}>
+                Client Intakes & Case Management
+              </h2>
+              <p style={{ opacity: 0.7, fontSize: '15px', color: '#cbd5e1' }}>
+                Track and manage people assisted by your department.
+              </p>
+            </div>
             {userRole !== 'volunteer' && (
-              <button className="btn-export" onClick={exportToCSV}>
-                <Download size={18} /> Export to Excel (CSV)
+              <button onClick={exportToCSV} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Download size={18} /> Export List
               </button>
             )}
           </div>
-          <div className="directory-table-container">
-            <table className="directory-table">
+
+          <div style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', color: 'white' }}>
               <thead>
-                <tr>
-                  <th>Phone Number</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Email</th>
-                  <th>Address</th>
-                  <th>Department</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', textAlign: 'left' }}>
+                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Client Name</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Phone Number</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Department</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Status</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.values(contacts).map(contact => (
-                  <tr key={contact.phone_number}>
-                    <td>{contact.phone_number}</td>
-                    <td>{contact.first_name || '-'}</td>
-                    <td>{contact.last_name || '-'}</td>
-                    <td>{contact.email || '-'}</td>
-                    <td>{contact.address || '-'}</td>
-                    <td>{contact.department || '-'}</td>
-                  </tr>
-                ))}
+                {Object.values(contacts)
+                  .filter(c => {
+                    const userDepts = userDepartment === 'All' ? ['All'] : userDepartment.split(',').map(d => d.trim());
+                    if (userRole === 'admin' || userDepts.includes('All')) return true;
+                    return userDepts.includes(c.department);
+                  })
+                  .map(contact => {
+                    let statusBadge = { bg: 'rgba(239,68,68,0.2)', color: '#ef4444', text: 'Needs Help' };
+                    if (contact.status === 'read' || contact.status === 'in-progress') statusBadge = { bg: 'rgba(234,179,8,0.2)', color: '#eab308', text: 'In Progress' };
+                    if (contact.status === 'resolved' || contact.status === 'helped') statusBadge = { bg: 'rgba(34,197,94,0.2)', color: '#22c55e', text: 'Helped' };
+
+                    return (
+                      <tr key={contact.phone_number} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '16px 24px' }}>
+                          <div style={{ fontWeight: '500' }}>{contact.first_name || contact.last_name ? `${contact.first_name || ''} ${contact.last_name || ''}` : 'Unknown Client'}</div>
+                        </td>
+                        <td style={{ padding: '16px 24px', color: '#cbd5e1' }}>{contact.phone_number}</td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <span style={{ padding: '4px 10px', borderRadius: '999px', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', fontSize: '13px' }}>
+                            {contact.department || 'Unassigned'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <span style={{ padding: '4px 10px', borderRadius: '999px', background: statusBadge.bg, color: statusBadge.color, fontSize: '13px', fontWeight: '500' }}>
+                            {statusBadge.text}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <button 
+                            onClick={() => setEditingIntake({ ...contact })}
+                            style={{ padding: '6px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
+                            Update Intake
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 {Object.values(contacts).length === 0 && (
                   <tr>
-                    <td colSpan="6" style={{textAlign: 'center', padding: '32px', color: 'var(--text-muted)'}}>
-                      No contacts found.
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
+                      No clients found for your department.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Intake Edit Modal */}
+          {editingIntake && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+              <div style={{ background: '#1e293b', width: '500px', borderRadius: '16px', padding: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'white', marginBottom: '24px' }}>Update Client Intake</h3>
+                <form onSubmit={handleSaveIntake}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>First Name</label>
+                      <input 
+                        type="text" 
+                        value={editingIntake.first_name || ''} 
+                        onChange={e => setEditingIntake({...editingIntake, first_name: e.target.value})}
+                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Last Name</label>
+                      <input 
+                        type="text" 
+                        value={editingIntake.last_name || ''} 
+                        onChange={e => setEditingIntake({...editingIntake, last_name: e.target.value})}
+                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Department</label>
+                    <select 
+                      value={editingIntake.department || 'General'}
+                      onChange={e => setEditingIntake({...editingIntake, department: e.target.value})}
+                      style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                    >
+                      {departments.filter(d => d !== 'All').map(d => (
+                        <option key={d} value={d} style={{color: 'black'}}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Case Status</label>
+                    <select 
+                      value={['resolved', 'helped'].includes(editingIntake.status) ? 'resolved' : (['read', 'in-progress'].includes(editingIntake.status) ? 'read' : 'unread')}
+                      onChange={e => setEditingIntake({...editingIntake, status: e.target.value})}
+                      style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                    >
+                      <option value="unread" style={{color: 'black'}}>Needs Help</option>
+                      <option value="read" style={{color: 'black'}}>In Progress</option>
+                      <option value="resolved" style={{color: 'black'}}>Helped / Resolved</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '6px' }}>Service Provided (Notes)</label>
+                    <textarea 
+                      value={editingIntake.notes || ''} 
+                      onChange={e => setEditingIntake({...editingIntake, notes: e.target.value})}
+                      rows="4"
+                      placeholder="What help was provided to this person?"
+                      style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                    <button type="button" onClick={() => setEditingIntake(null)} style={{ padding: '10px 20px', background: 'transparent', color: '#cbd5e1', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                    <button type="submit" style={{ padding: '10px 24px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Save Intake</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
