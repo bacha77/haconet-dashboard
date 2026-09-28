@@ -1271,7 +1271,14 @@ function App() {
               <div className="dept-bars">
                 {(() => {
                   // Calculate department counts based on actual inbound messages and calls
-                  const deptCounts = {};
+                  const deptCounts = {
+                    'Immigration': 0,
+                    'Educational Programs': 0,
+                    'Health': 0,
+                    'Cultural': 0,
+                    'Social Services': 0,
+                    'General': 0
+                  };
                   let totalInteractions = 0;
                   
                   messages.filter(m => m.direction === 'inbound').forEach(m => {
@@ -1287,8 +1294,14 @@ function App() {
                     }
                     
                     const dept = contact?.department || 'General';
-                    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
-                    totalInteractions++;
+                    // Only increment if it's a recognized department
+                    if (deptCounts[dept] !== undefined) {
+                      deptCounts[dept]++;
+                      totalInteractions++;
+                    } else if (dept !== 'ESL') {
+                      deptCounts['General']++;
+                      totalInteractions++;
+                    }
                   });
 
                   return Object.entries(deptCounts).sort((a, b) => b[1] - a[1]).map(([dept, count]) => (
