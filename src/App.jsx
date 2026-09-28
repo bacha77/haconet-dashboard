@@ -1226,8 +1226,18 @@ function App() {
                   </thead>
                   <tbody>
                     {messages.filter(m => m.direction === 'inbound').sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 100).map(m => {
-                      const contact = contacts[m.sender_number];
-                      const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : m.sender_number;
+                      let contact = contacts[m.sender_number];
+                      const isImportedCall = m.body?.startsWith('Call log: ');
+                      
+                      if (isImportedCall) {
+                        const sid = m.body.replace('Call log: ', '');
+                        const matchingContactKey = Object.keys(contacts).find(k => k.includes(sid));
+                        if (matchingContactKey) {
+                          contact = contacts[matchingContactKey];
+                        }
+                      }
+
+                      const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : (m.sender_number.includes('_') ? m.sender_number.split('_')[0] : m.sender_number);
                       const isCall = m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call');
                       
                       return (
@@ -1245,7 +1255,7 @@ function App() {
                             <span style={{ background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', padding: '4px 10px', borderRadius: '6px', fontSize: '11px' }}>{contact?.department || 'General'}</span>
                           </td>
                           <td style={{padding: '14px 16px', color: '#94a3b8', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-                            {isCall && (!m.body || m.body.trim() === '') ? 'Audio recording attached' : m.body}
+                            {isCall && (!m.body || m.body.trim() === '' || isImportedCall) ? 'Phone Call' : m.body}
                           </td>
                         </tr>
                       );
