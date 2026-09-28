@@ -518,14 +518,14 @@ function App() {
   const departments = ['All', 'Immigration', 'Educational Programs', 'Health', 'Cultural', 'Social Services', 'General'];
   
   const quickReplies = [
-    "Biwo nou louvri lendi rive vandredi, soti 9è nan maten pou rive 5è nan aswè. (Office hours)",
-    "Adrès nou se 2020 Brice Rd, Reynoldsburg, OH 43068. (Address)",
-    "Èske ou ka ban nou non konplè w ak dat nesans ou tanpri? (Ask for Name/DOB)",
-    "Tanpri, èske w ka voye yon mesaj vwa pou eksplike ka w la pi byen? (Ask for Voice Note)",
+    "Biwo nou louvri lendi rive vandredi, soti 9Ã¨ nan maten pou rive 5Ã¨ nan aswÃ¨. (Office hours)",
+    "AdrÃ¨s nou se 2020 Brice Rd, Reynoldsburg, OH 43068. (Address)",
+    "Ãˆske ou ka ban nou non konplÃ¨ w ak dat nesans ou tanpri? (Ask for Name/DOB)",
+    "Tanpri, Ã¨ske w ka voye yon mesaj vwa pou eksplike ka w la pi byen? (Ask for Voice Note)",
     "Youn nan ajan imigrasyon nou yo ap kontakte w byento. (Immigration Follow-up)",
-    "Kilè ou ta renmen pran yon randevou pou Pwogram Edikatif la? (Educational Programs Appointment)",
-    "Pou kesyon sante a, èske ou gen asirans medikal? (Health Insurance Ask)",
-    "Mèsi paske w kontakte Haconet! Kijan nou ka ede w jodi a? (Greeting)"
+    "KilÃ¨ ou ta renmen pran yon randevou pou Pwogram Edikatif la? (Educational Programs Appointment)",
+    "Pou kesyon sante a, Ã¨ske ou gen asirans medikal? (Health Insurance Ask)",
+    "MÃ¨si paske w kontakte Haconet! Kijan nou ka ede w jodi a? (Greeting)"
   ];
 
   const exportToCSV = () => {
@@ -796,7 +796,7 @@ function App() {
                     <span className="dept-badge-glass">{contacts[selectedNumber].department}</span>
                   )}
                   {contacts[selectedNumber] && !contacts[selectedNumber].bot_active && (
-                    <span className="dept-badge-glass warning">🤖 Bot Paused</span>
+                    <span className="dept-badge-glass warning">ðŸ¤– Bot Paused</span>
                   )}
                 </div>
                 <div className="chat-header-actions">
@@ -806,7 +806,7 @@ function App() {
                     value={contacts[selectedNumber]?.assigned_to || ''}
                     onChange={(e) => handleAssign(selectedNumber, e.target.value)}
                   >
-                    <option value="" disabled>👤 Assign Ticket</option>
+                    <option value="" disabled>ðŸ‘¤ Assign Ticket</option>
                     {staffList.map(staff => (
                       <option key={staff.id} value={staff.name} style={{color: '#000'}}>{staff.name}</option>
                     ))}
@@ -870,7 +870,7 @@ function App() {
                             onClick={() => handleTranslate(msg.id, msg.body)}
                             disabled={translatingId === msg.id || translations[msg.id]}
                           >
-                            {translatingId === msg.id ? 'Translating...' : 'A/文 Translate'}
+                            {translatingId === msg.id ? 'Translating...' : 'A/æ–‡ Translate'}
                           </button>
                         )}
                         <span className="timestamp">
@@ -987,7 +987,7 @@ function App() {
                     disabled={isTranslatingDraft || !replyText.trim()}
                     title="Translate to Haitian Creole"
                   >
-                    {isTranslatingDraft ? '...' : '文 Creole'}
+                    {isTranslatingDraft ? '...' : 'æ–‡ Creole'}
                   </button>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '12px' }}>
                     {isInternalNote && (
@@ -995,8 +995,8 @@ function App() {
                     )}
                     {selectedFile && (
                       <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '4px' }}>
-                        📎 {selectedFile.name} 
-                        <span style={{ cursor: 'pointer', marginLeft: '8px', opacity: 0.7 }} onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}>✖</span>
+                        ðŸ“Ž {selectedFile.name} 
+                        <span style={{ cursor: 'pointer', marginLeft: '8px', opacity: 0.7 }} onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}>âœ–</span>
                       </div>
                     )}
                     <input 
@@ -1102,7 +1102,7 @@ function App() {
                 disabled={isSavingProfile}
                 style={{ backgroundColor: saveSuccess ? '#10b981' : '' }}
               >
-                {isSavingProfile ? 'Saving...' : saveSuccess ? '✓ Saved!' : 'Save Profile'}
+                {isSavingProfile ? 'Saving...' : saveSuccess ? 'âœ“ Saved!' : 'Save Profile'}
               </button>
             </form>
           </div>
@@ -1163,6 +1163,52 @@ function App() {
             <h2>System Analytics</h2>
           </div>
           <div style={{padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap'}}>
+            
+            <div className="analytics-card" style={{width: '100%', maxWidth: '100%'}}>
+              <h3>Recent Inbound Log (Caller ID / Messages)</h3>
+              <p style={{fontSize: 12, opacity: 0.7, marginBottom: 12}}>A chronological log of everyone who has contacted the Haconet line.</p>
+              <div style={{maxHeight: '400px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: 8}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 13}}>
+                  <thead>
+                    <tr style={{background: 'rgba(255,255,255,0.05)', textAlign: 'left'}}>
+                      <th style={{padding: '12px'}}>Date</th>
+                      <th style={{padding: '12px'}}>Phone / Caller</th>
+                      <th style={{padding: '12px'}}>Department</th>
+                      <th style={{padding: '12px'}}>Preview</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {messages.filter(m => m.direction === 'inbound').sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50).map(m => {
+                      const contact = contacts[m.sender_number];
+                      const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : m.sender_number;
+                      return (
+                        <tr key={m.id} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                          <td style={{padding: '12px', whiteSpace: 'nowrap'}}>{new Date(m.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</td>
+                          <td style={{padding: '12px', fontWeight: 'bold'}}>{name}</td>
+                          <td style={{padding: '12px'}}><span className="mini-badge">{contact?.department || 'General'}</span></td>
+                          <td style={{padding: '12px', opacity: 0.8, maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{m.body || 'Media / Voicemail attached'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="analytics-card" style={{width: '100%', maxWidth: '600px'}}>
+              <h3>Busiest Day of the Week</h3>
+              <div className="stat-number">
+                {(() => {
+                  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                  const counts = [0,0,0,0,0,0,0];
+                  messages.filter(m => m.direction === 'inbound').forEach(m => {
+                    counts[new Date(m.created_at).getDay()]++;
+                  });
+                  const maxDay = counts.indexOf(Math.max(...counts));
+                  return Math.max(...counts) > 0 ? days[maxDay] : 'N/A';
+                })()}
+              </div>
+            </div>
             {/* Compute avg response time on the fly */}
             {(() => {
               let totalTime = 0;
@@ -1289,6 +1335,9 @@ function App() {
                 ))}
               </div>
             </div>
+
+
+
           </div>
         </div>
       )}
