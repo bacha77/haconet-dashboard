@@ -1158,46 +1158,42 @@ function App() {
 
       {/* ANALYTICS VIEW */}
       {currentView === 'analytics' && (
-        <div className="directory-overlay">
-          <div className="directory-header">
-            <h2>System Analytics</h2>
+        <div className="directory-overlay" style={{ background: 'var(--bg-dark)', padding: '32px', overflowY: 'auto' }}>
+          <div className="directory-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '32px' }}>
+            <div>
+              <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#f8fafc' }}>
+                Community Impact & Analytics
+              </h2>
+              <p style={{ opacity: 0.7, fontSize: '15px', color: '#cbd5e1' }}>
+                Tracking our reach and engagement across Haconet's non-profit services.
+              </p>
+            </div>
           </div>
-          <div style={{padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap'}}>
-            
-            <div className="analytics-card" style={{width: '100%', maxWidth: '100%'}}>
-              <h3>Recent Inbound Log (Caller ID / Messages)</h3>
-              <p style={{fontSize: 12, opacity: 0.7, marginBottom: 12}}>A chronological log of everyone who has contacted the Haconet line.</p>
-              <div style={{maxHeight: '400px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: 8}}>
-                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 13}}>
-                  <thead>
-                    <tr style={{background: 'rgba(255,255,255,0.05)', textAlign: 'left'}}>
-                      <th style={{padding: '12px'}}>Date</th>
-                      <th style={{padding: '12px'}}>Phone / Caller</th>
-                      <th style={{padding: '12px'}}>Department</th>
-                      <th style={{padding: '12px'}}>Preview</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {messages.filter(m => m.direction === 'inbound').sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50).map(m => {
-                      const contact = contacts[m.sender_number];
-                      const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : m.sender_number;
-                      return (
-                        <tr key={m.id} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
-                          <td style={{padding: '12px', whiteSpace: 'nowrap'}}>{new Date(m.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</td>
-                          <td style={{padding: '12px', fontWeight: 'bold'}}>{name}</td>
-                          <td style={{padding: '12px'}}><span className="mini-badge">{contact?.department || 'General'}</span></td>
-                          <td style={{padding: '12px', opacity: 0.8, maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{m.body || 'Media / Voicemail attached'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          
+          {/* Key Metrics Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.05) 100%)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#93c5fd', marginBottom: '12px', fontWeight: 600 }}>Total Individuals Reached</h3>
+              <div style={{ fontSize: '42px', fontWeight: '800', color: '#bfdbfe' }}>{Object.keys(contacts).length}</div>
+            </div>
+
+            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.05) 100%)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#6ee7b7', marginBottom: '12px', fontWeight: 600 }}>Total Inbound Texts</h3>
+              <div style={{ fontSize: '42px', fontWeight: '800', color: '#a7f3d0' }}>
+                {messages.filter(m => m.direction === 'inbound' && !(m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call'))).length}
               </div>
             </div>
 
-            <div className="analytics-card" style={{width: '100%', maxWidth: '600px'}}>
-              <h3>Busiest Day of the Week</h3>
-              <div className="stat-number">
+            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.05) 100%)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fcd34d', marginBottom: '12px', fontWeight: 600 }}>Total Inbound Calls</h3>
+              <div style={{ fontSize: '42px', fontWeight: '800', color: '#fef08a' }}>
+                {messages.filter(m => m.direction === 'inbound' && (m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call'))).length}
+              </div>
+            </div>
+            
+            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(139,92,246,0.15) 0%, rgba(109,40,217,0.05) 100%)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#c4b5fd', marginBottom: '12px', fontWeight: 600 }}>Busiest Day</h3>
+              <div style={{ fontSize: '32px', fontWeight: '800', color: '#ddd6fe', marginTop: '4px' }}>
                 {(() => {
                   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                   const counts = [0,0,0,0,0,0,0];
@@ -1209,134 +1205,82 @@ function App() {
                 })()}
               </div>
             </div>
-            {/* Compute avg response time on the fly */}
-            {(() => {
-              let totalTime = 0;
-              let responseCount = 0;
-              const staffTimes = {}; // { [staffName]: { totalTime, responseCount } }
-              const messagesByNumber = {};
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px' }}>
+            {/* Left Column: Recent Logs */}
+            <div className="analytics-card glass-card" style={{ padding: '24px', borderRadius: '16px', background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px', color: '#f8fafc' }}>Recent Community Inquiries</h3>
+              <p style={{fontSize: 13, color: '#94a3b8', marginBottom: 20}}>A chronological log of all recent texts and calls from the community.</p>
               
-              messages.forEach(m => {
-                if (!messagesByNumber[m.sender_number]) messagesByNumber[m.sender_number] = [];
-                messagesByNumber[m.sender_number].push(m);
-              });
-
-              Object.entries(messagesByNumber).forEach(([num, thread]) => {
-                const assignedTo = contacts[num]?.assigned_to || 'Unassigned';
-                if (!staffTimes[assignedTo]) staffTimes[assignedTo] = { totalTime: 0, responseCount: 0 };
-                
-                let waitingSince = null;
-                thread.forEach(msg => {
-                  if (msg.direction === 'inbound') {
-                    if (!waitingSince) waitingSince = new Date(msg.created_at);
-                  } else if (msg.direction === 'outbound') {
-                    if (waitingSince) {
-                      const outTime = new Date(msg.created_at);
-                      const diffMs = outTime - waitingSince;
-                      if (diffMs > 0 && diffMs < 1000 * 60 * 60 * 24 * 7) {
-                          totalTime += diffMs;
-                          responseCount++;
-                          staffTimes[assignedTo].totalTime += diffMs;
-                          staffTimes[assignedTo].responseCount++;
-                      }
-                      waitingSince = null;
-                    }
-                  }
-                });
-              });
-
-              let avgDisplay = "N/A";
-              if (responseCount > 0) {
-                const avgMs = totalTime / responseCount;
-                const avgMins = Math.round(avgMs / 60000);
-                if (avgMins < 60) avgDisplay = `${avgMins} mins`;
-                else avgDisplay = `${(avgMins / 60).toFixed(1)} hours`;
-              }
-
-              return (
-                <>
-                  <div className="analytics-card" style={{background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))', borderColor: 'rgba(16, 185, 129, 0.2)'}}>
-                    <h3 style={{color: '#10b981'}}>Avg Response Time</h3>
-                    <div className="stat-number" style={{color: '#10b981'}}>{avgDisplay}</div>
-                    <div style={{fontSize: 11, opacity: 0.6, marginTop: 4}}>Based on {responseCount} replies</div>
-                  </div>
-                  
-                  {/* Break down by staff */}
-                  <div className="analytics-card" style={{width: '100%', maxWidth: '600px'}}>
-                    <h3>Avg Response by Staff</h3>
-                    <div className="dept-bars">
-                      {Object.entries(staffTimes)
-                        .filter(([staff, data]) => data.responseCount > 0 && staff !== 'Unassigned')
-                        .map(([staff, data]) => {
-                          const avgMs = data.totalTime / data.responseCount;
-                          const avgMins = Math.round(avgMs / 60000);
-                          const display = avgMins < 60 ? `${avgMins}m` : `${(avgMins / 60).toFixed(1)}h`;
-                          // calculate width relative to the overall average for a bar chart
-                          const globalAvgMs = responseCount > 0 ? (totalTime / responseCount) : 1;
-                          const ratio = Math.min(100, Math.max(10, (avgMs / globalAvgMs) * 50));
-                          
-                          return (
-                            <div key={staff} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
-                              <span style={{width: 120, fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8}}>{staff}</span>
-                              <div style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, height: 24, overflow: 'hidden'}}>
-                                <div style={{
-                                  width: `${ratio}%`,
-                                  backgroundColor: avgMs > globalAvgMs ? '#ef4444' : '#10b981', // red if slower than average, green if faster
-                                  height: '100%',
-                                  borderRadius: 4
-                                }}></div>
-                              </div>
-                              <span style={{marginLeft: 12, fontSize: 14, fontWeight: 'bold', width: 60, textAlign: 'right'}}>{display}</span>
-                            </div>
-                          );
-                      })}
-                      {Object.entries(staffTimes).filter(([staff, data]) => data.responseCount > 0 && staff !== 'Unassigned').length === 0 && (
-                        <div style={{fontSize: 13, opacity: 0.6, fontStyle: 'italic', marginTop: 10}}>No staff responses logged yet.</div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-
-            <div className="analytics-card">
-              <h3>Total Contacts</h3>
-              <div className="stat-number">{Object.keys(contacts).length}</div>
+              <div style={{maxHeight: '500px', overflowY: 'auto', background: 'rgba(0,0,0,0.3)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 13}}>
+                  <thead style={{ position: 'sticky', top: 0, background: '#1e293b', zIndex: 1, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                    <tr style={{ textAlign: 'left' }}>
+                      <th style={{padding: '14px 16px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '11px'}}>Date</th>
+                      <th style={{padding: '14px 16px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '11px'}}>Type</th>
+                      <th style={{padding: '14px 16px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '11px'}}>Contact</th>
+                      <th style={{padding: '14px 16px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '11px'}}>Department</th>
+                      <th style={{padding: '14px 16px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '11px'}}>Preview</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {messages.filter(m => m.direction === 'inbound').sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 100).map(m => {
+                      const contact = contacts[m.sender_number];
+                      const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : m.sender_number;
+                      const isCall = m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call');
+                      
+                      return (
+                        <tr key={m.id} style={{borderBottom: '1px solid rgba(255,255,255,0.02)'}} className="table-row-hover">
+                          <td style={{padding: '14px 16px', whiteSpace: 'nowrap', color: '#cbd5e1'}}>{new Date(m.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</td>
+                          <td style={{padding: '14px 16px'}}>
+                            {isCall ? (
+                              <span style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', border: '1px solid rgba(245,158,11,0.3)' }}>CALL</span>
+                            ) : (
+                              <span style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', border: '1px solid rgba(59,130,246,0.3)' }}>TEXT</span>
+                            )}
+                          </td>
+                          <td style={{padding: '14px 16px', fontWeight: '600', color: '#f8fafc'}}>{name}</td>
+                          <td style={{padding: '14px 16px'}}>
+                            <span style={{ background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', padding: '4px 10px', borderRadius: '6px', fontSize: '11px' }}>{contact?.department || 'General'}</span>
+                          </td>
+                          <td style={{padding: '14px 16px', color: '#94a3b8', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                            {isCall && (!m.body || m.body.trim() === '') ? 'Audio recording attached' : m.body}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="analytics-card">
-              <h3>Total Messages</h3>
-              <div className="stat-number">{messages.length}</div>
-            </div>
-            <div className="analytics-card">
-              <h3>Inbound Messages</h3>
-              <div className="stat-number">{messages.filter(m => m.direction === 'inbound').length}</div>
-            </div>
-            
-            <div className="analytics-card" style={{width: '100%', maxWidth: '600px'}}>
-              <h3>Contacts by Department</h3>
+
+            {/* Right Column: Departments */}
+            <div className="analytics-card glass-card" style={{ padding: '24px', borderRadius: '16px', background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.05)', height: 'fit-content', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '24px', color: '#f8fafc' }}>Needs by Department</h3>
               <div className="dept-bars">
                 {Object.entries(Object.values(contacts).reduce((acc, c) => {
                   const dept = c.department || 'General';
                   acc[dept] = (acc[dept] || 0) + 1;
                   return acc;
                 }, {})).map(([dept, count]) => (
-                  <div key={dept} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
-                    <span style={{width: 120, fontSize: 14, fontWeight: 500}}>{dept}</span>
-                    <div style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, height: 24, overflow: 'hidden'}}>
+                  <div key={dept} style={{marginBottom: 20}}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: '#e2e8f0' }}>{dept}</span>
+                      <span style={{ fontSize: 14, fontWeight: 'bold', color: '#94a3b8' }}>{count}</span>
+                    </div>
+                    <div style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, height: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{
                         width: `${(count / Math.max(1, Object.keys(contacts).length)) * 100}%`,
-                        backgroundColor: 'var(--primary)',
+                        background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
                         height: '100%',
-                        borderRadius: 4
+                        borderRadius: 8
                       }}></div>
                     </div>
-                    <span style={{marginLeft: 12, fontSize: 14, fontWeight: 'bold'}}>{count}</span>
                   </div>
                 ))}
               </div>
             </div>
-
-
 
           </div>
         </div>
