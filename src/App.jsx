@@ -515,7 +515,7 @@ function App() {
 
   const chatMessages = messages.filter(m => m.sender_number === selectedNumber);
 
-  const departments = ['All', 'Immigration', 'Health', 'Cultural', 'Social Services', 'General'];
+  const departments = ['All', 'Immigration', 'Educational Programs', 'Health', 'Cultural', 'Social Services', 'General'];
   
   const quickReplies = [
     "Biwo nou louvri lendi rive vandredi, soti 9Ã¨ nan maten pou rive 5Ã¨ nan aswÃ¨. (Office hours)",
@@ -1395,7 +1395,7 @@ function App() {
                   
                   <div className="glass-input" style={{padding: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center'}}>
                     <span style={{fontSize: 12, opacity: 0.7, width: '100%'}}>Departments:</span>
-                    {['All', 'Immigration', 'Cultural', 'Social Services', 'General'].map(dept => (
+                    {['All', 'Immigration', 'Educational Programs', 'Cultural', 'Social Services', 'General'].map(dept => (
                       <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
