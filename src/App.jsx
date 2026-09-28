@@ -1150,10 +1150,10 @@ function App() {
             )}
           </div>
 
-          <div style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', overflow: 'hidden' }}>
+          <div style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', overflowY: 'auto', flex: 1 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', color: 'white' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', textAlign: 'left' }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)', textAlign: 'left' }}>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Client Name</th>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Phone Number</th>
                   <th style={{ padding: '16px 24px', fontWeight: '600', color: '#94a3b8' }}>Department</th>
