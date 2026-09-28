@@ -1269,26 +1269,45 @@ function App() {
             <div className="analytics-card glass-card" style={{ padding: '24px', borderRadius: '16px', background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.05)', height: 'fit-content', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '24px', color: '#f8fafc' }}>Needs by Department</h3>
               <div className="dept-bars">
-                {Object.entries(Object.values(contacts).reduce((acc, c) => {
-                  const dept = c.department || 'General';
-                  acc[dept] = (acc[dept] || 0) + 1;
-                  return acc;
-                }, {})).map(([dept, count]) => (
-                  <div key={dept} style={{marginBottom: 20}}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: '#e2e8f0' }}>{dept}</span>
-                      <span style={{ fontSize: 14, fontWeight: 'bold', color: '#94a3b8' }}>{count}</span>
+                {(() => {
+                  // Calculate department counts based on actual inbound messages and calls
+                  const deptCounts = {};
+                  let totalInteractions = 0;
+                  
+                  messages.filter(m => m.direction === 'inbound').forEach(m => {
+                    let contact = contacts[m.sender_number];
+                    const isImportedCall = m.body?.startsWith('Call log: ');
+                    
+                    if (isImportedCall) {
+                      const sid = m.body.replace('Call log: ', '');
+                      const matchingContactKey = Object.keys(contacts).find(k => k.includes(sid));
+                      if (matchingContactKey) {
+                        contact = contacts[matchingContactKey];
+                      }
+                    }
+                    
+                    const dept = contact?.department || 'General';
+                    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+                    totalInteractions++;
+                  });
+
+                  return Object.entries(deptCounts).sort((a, b) => b[1] - a[1]).map(([dept, count]) => (
+                    <div key={dept} style={{marginBottom: 20}}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: '#e2e8f0' }}>{dept}</span>
+                        <span style={{ fontSize: 14, fontWeight: 'bold', color: '#94a3b8' }}>{count}</span>
+                      </div>
+                      <div style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, height: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{
+                          width: `${(count / Math.max(1, totalInteractions)) * 100}%`,
+                          background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+                          height: '100%',
+                          borderRadius: 8
+                        }}></div>
+                      </div>
                     </div>
-                    <div style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, height: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{
-                        width: `${(count / Math.max(1, Object.keys(contacts).length)) * 100}%`,
-                        background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                        height: '100%',
-                        borderRadius: 8
-                      }}></div>
-                    </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
 
