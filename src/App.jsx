@@ -1423,7 +1423,12 @@ function App() {
               return true;
             };
 
-            const filteredContacts = Object.values(contacts).filter(c => isWithinTimeframe(c.last_updated));
+            const filedIntakes = Object.values(contacts).filter(c => {
+              if (!isWithinTimeframe(c.last_updated)) return false;
+              // A contact is considered a "filed intake" if a staff member has saved it 
+              // with a name or notes, distinguishing it from an untouched inbound text.
+              return !!(c.first_name || c.last_name || c.notes);
+            });
             const filteredMessages = messages.filter(m => isWithinTimeframe(m.created_at));
 
             const answeredCallsCount = filteredMessages.filter(m => m.direction === 'inbound' && m.body?.startsWith('Call log: ')).length;
@@ -1435,8 +1440,8 @@ function App() {
                 {/* Key Metrics Row */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', marginBottom: '32px' }}>
                   <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.05) 100%)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#93c5fd', marginBottom: '12px', fontWeight: 600 }}>Intakes Filed / Reached</h3>
-                    <div style={{ fontSize: '42px', fontWeight: '800', color: '#bfdbfe' }}>{filteredContacts.length}</div>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#93c5fd', marginBottom: '12px', fontWeight: 600 }}>Intakes Filed</h3>
+                    <div style={{ fontSize: '42px', fontWeight: '800', color: '#bfdbfe' }}>{filedIntakes.length}</div>
                   </div>
 
                   <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.05) 100%)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
