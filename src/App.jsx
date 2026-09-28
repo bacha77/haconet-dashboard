@@ -23,6 +23,7 @@ function App() {
   const [replyText, setReplyText] = useState('');
   const [editingIntake, setEditingIntake] = useState(null);
   const [intakeSearch, setIntakeSearch] = useState('');
+  const [analyticsTimeframe, setAnalyticsTimeframe] = useState('all');
   const [isSending, setIsSending] = useState(false);
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('All');
@@ -1362,64 +1363,102 @@ function App() {
                 Tracking our reach and engagement across Haconet's non-profit services.
               </p>
             </div>
-            <button 
-              onClick={() => {
-                const dataRows = messages.filter(m => m.direction === 'inbound').map(m => {
-                  let contact = contacts[m.sender_number];
-                  const isImportedCall = m.body?.startsWith('Call log: ');
-                  if (isImportedCall) {
-                    const sid = m.body.replace('Call log: ', '');
-                    const matchingContactKey = Object.keys(contacts).find(k => k.includes(sid));
-                    if (matchingContactKey) {
-                      contact = contacts[matchingContactKey];
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <select 
+                value={analyticsTimeframe}
+                onChange={e => setAnalyticsTimeframe(e.target.value)}
+                style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', outline: 'none' }}>
+                <option value="all" style={{color: 'black'}}>All Time</option>
+                <option value="this_week" style={{color: 'black'}}>This Week (Last 7 Days)</option>
+                <option value="last_week" style={{color: 'black'}}>Last Week (7-14 Days Ago)</option>
+                <option value="last_30" style={{color: 'black'}}>Last 30 Days</option>
+              </select>
+              <button 
+                onClick={() => {
+                  const dataRows = messages.filter(m => m.direction === 'inbound').map(m => {
+                    let contact = contacts[m.sender_number];
+                    const isImportedCall = m.body?.startsWith('Call log: ');
+                    if (isImportedCall) {
+                      const sid = m.body.replace('Call log: ', '');
+                      const matchingContactKey = Object.keys(contacts).find(k => k.includes(sid));
+                      if (matchingContactKey) {
+                        contact = contacts[matchingContactKey];
+                      }
                     }
-                  }
-                  const dept = contact?.department || 'General';
-                  const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : (m.sender_number.includes('_') ? m.sender_number.split('_')[0] : m.sender_number);
-                  const isCall = m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call');
-                  
-                  const type = isCall ? 'CALL' : 'TEXT';
-                  const date = new Date(m.created_at).toLocaleString();
-                  const text = (isCall && (!m.body || m.body.trim() === '' || isImportedCall)) ? 'Phone Call' : m.body;
+                    const dept = contact?.department || 'General';
+                    const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}` : (m.sender_number.includes('_') ? m.sender_number.split('_')[0] : m.sender_number);
+                    const isCall = m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call');
+                    
+                    const type = isCall ? 'CALL' : 'TEXT';
+                    const date = new Date(m.created_at).toLocaleString();
+                    const text = (isCall && (!m.body || m.body.trim() === '' || isImportedCall)) ? 'Phone Call' : m.body;
 
-                  return `"${date}","${type}","${name}","${dept}","${(text||'').replace(/"/g, '""')}"`;
-                });
+                    return `"${date}","${type}","${name}","${dept}","${(text||'').replace(/"/g, '""')}"`;
+                  });
 
-                const csvContent = ["Date,Type,Sender,Department,Message", ...dataRows].join('\n');
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.setAttribute("href", url);
-                link.setAttribute("download", "haconet_analytics.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Export to CSV
-            </button>
+                  const csvContent = ["Date,Type,Sender,Department,Message", ...dataRows].join('\n');
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", "haconet_analytics.csv");
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Export to CSV
+              </button>
+            </div>
           </div>
           
-          {/* Key Metrics Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.05) 100%)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#93c5fd', marginBottom: '12px', fontWeight: 600 }}>Total Individuals Reached</h3>
-              <div style={{ fontSize: '42px', fontWeight: '800', color: '#bfdbfe' }}>{Object.keys(contacts).length}</div>
-            </div>
+          {(() => {
+            const isWithinTimeframe = (dateStr) => {
+              if (analyticsTimeframe === 'all') return true;
+              if (!dateStr) return false;
+              const diffDays = (new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24);
+              if (analyticsTimeframe === 'this_week') return diffDays <= 7;
+              if (analyticsTimeframe === 'last_week') return diffDays > 7 && diffDays <= 14;
+              if (analyticsTimeframe === 'last_30') return diffDays <= 30;
+              return true;
+            };
 
-            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.05) 100%)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#6ee7b7', marginBottom: '12px', fontWeight: 600 }}>Total Inbound Texts</h3>
-              <div style={{ fontSize: '42px', fontWeight: '800', color: '#a7f3d0' }}>
-                {messages.filter(m => m.direction === 'inbound' && !(m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call'))).length}
-              </div>
-            </div>
+            const filteredContacts = Object.values(contacts).filter(c => isWithinTimeframe(c.last_updated));
+            const filteredMessages = messages.filter(m => isWithinTimeframe(m.created_at));
 
-            <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.05) 100%)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fcd34d', marginBottom: '12px', fontWeight: 600 }}>Total Inbound Calls</h3>
-              <div style={{ fontSize: '42px', fontWeight: '800', color: '#fef08a' }}>
-                {messages.filter(m => m.direction === 'inbound' && (m.body?.toLowerCase().includes('voicemail') || m.media_type?.startsWith('audio') || m.body?.toLowerCase().includes('call'))).length}
-              </div>
-            </div>
+            const answeredCallsCount = filteredMessages.filter(m => m.direction === 'inbound' && m.body?.startsWith('Call log: ')).length;
+            const missedCallsCount = filteredMessages.filter(m => m.direction === 'inbound' && m.body?.toLowerCase().includes('voicemail')).length;
+            const textsCount = filteredMessages.filter(m => m.direction === 'inbound' && !(m.body?.toLowerCase().includes('voicemail') || m.body?.startsWith('Call log: '))).length;
+
+            return (
+              <>
+                {/* Key Metrics Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+                  <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.05) 100%)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#93c5fd', marginBottom: '12px', fontWeight: 600 }}>Intakes Filed / Reached</h3>
+                    <div style={{ fontSize: '42px', fontWeight: '800', color: '#bfdbfe' }}>{filteredContacts.length}</div>
+                  </div>
+
+                  <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.05) 100%)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#6ee7b7', marginBottom: '12px', fontWeight: 600 }}>Total Inbound Texts</h3>
+                    <div style={{ fontSize: '42px', fontWeight: '800', color: '#a7f3d0' }}>
+                      {textsCount}
+                    </div>
+                  </div>
+
+                  <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(34,197,94,0.15) 0%, rgba(21,128,61,0.05) 100%)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#86efac', marginBottom: '12px', fontWeight: 600 }}>Answered Calls</h3>
+                    <div style={{ fontSize: '42px', fontWeight: '800', color: '#bbf7d0' }}>
+                      {answeredCallsCount}
+                    </div>
+                  </div>
+
+                  <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(239,68,68,0.15) 0%, rgba(185,28,28,0.05) 100%)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fca5a5', marginBottom: '12px', fontWeight: 600 }}>Missed Calls (Voicemails)</h3>
+                    <div style={{ fontSize: '42px', fontWeight: '800', color: '#fecaca' }}>
+                      {missedCallsCount}
+                    </div>
+                  </div>
             
             <div className="analytics-card glass-card" style={{ padding: '24px', textAlign: 'center', background: 'linear-gradient(145deg, rgba(139,92,246,0.15) 0%, rgba(109,40,217,0.05) 100%)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
               <h3 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#c4b5fd', marginBottom: '12px', fontWeight: 600 }}>Busiest Day</h3>
@@ -1555,6 +1594,9 @@ function App() {
             </div>
 
           </div>
+          </>
+          );
+        })()}
         </div>
       )}
 
