@@ -48,7 +48,7 @@ function App() {
   // CRM Profile State
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [profileForm, setProfileForm] = useState({ first_name: '', last_name: '', email: '', notes: '', address: '' });
+  const [profileForm, setProfileForm] = useState({ first_name: '', last_name: '', email: '', notes: '', address: '', tags: '', priority: 'Normal' });
   
   // Translation State
   const [translations, setTranslations] = useState({});
@@ -140,8 +140,24 @@ function App() {
     const fetchRole = async () => {
       if (!session?.user?.email) return;
       try {
-        const { data: staffData, error } = await supabase.from('staff').select('*').eq('email', session.user.email).single();
-        if (staffData) {
+        const { data: staffList, error } = await supabase.from('staff').select('*').eq('email', session.user.email);
+        
+        if (error) {
+          console.error("Error fetching staff role:", error);
+          setAuthLoading(false);
+          return;
+        }
+
+        if (staffList && staffList.length > 0) {
+          const staffData = staffList[0];
+          
+          const isBacha = session.user.email?.toLowerCase().includes('bacha7');
+          if (isBacha && staffData.role !== 'admin') {
+            // Non-blocking update to prevent hanging if RLS fails
+            supabase.from('staff').update({ role: 'admin' }).eq('email', session.user.email).then(() => {});
+            staffData.role = 'admin';
+          }
+
           setUserRole(staffData.role || 'pending');
           setUserStaffName(staffData.name);
           const depts = staffData.department || 'All';
@@ -153,22 +169,24 @@ function App() {
             }
           }
         } else {
-          // If staff doesn't exist, insert them as pending
+          // If staff doesn't exist, insert them as pending (or admin if bacha7@gmail.com)
           const newName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+          const isBacha = session.user.email?.toLowerCase().includes('bacha7');
+          const initialRole = isBacha ? 'admin' : 'pending';
           const { data: newStaff, error: insertError } = await supabase.from('staff').insert([{
             name: newName,
             email: session.user.email,
-            role: 'pending',
+            role: initialRole,
             department: 'All'
           }]).select().single();
           
-          setUserRole('pending');
+          setUserRole(initialRole);
           setUserStaffName(newStaff ? newStaff.name : newName); 
           setUserDepartment('All');
           setStaffFilter('My Tickets & Unassigned');
         }
       } catch (err) {
-        console.error("Error fetching role:", err);
+        console.error("Error in role fetch process:", err);
       } finally {
         setAuthLoading(false);
       }
@@ -187,7 +205,9 @@ function App() {
         last_name: c.last_name || '',
         email: c.email || '',
         notes: c.notes || '',
-        address: c.address || ''
+        address: c.address || '',
+        tags: c.tags || '',
+        priority: c.priority || 'Normal'
       });
     }
   }, [selectedNumber, contacts]);
@@ -648,9 +668,11 @@ function App() {
           <button className="btn-send-glass" onClick={() => setShowNewMessageModal(true)} style={{marginRight: 8, padding: '6px 12px', fontSize: 13, height: 'auto', display: 'flex', alignItems: 'center'}}>
             <MessageSquarePlus size={16} style={{marginRight: 6}} /> New Message
           </button>
-          <button className="btn-broadcast-header" onClick={() => setShowBroadcast(true)} style={{marginRight: 8}}>
-            <Megaphone size={16} /> Broadcast
-          </button>
+          {userRole !== 'volunteer' && (
+            <button className="btn-broadcast-header" onClick={() => setShowBroadcast(true)} style={{marginRight: 8}}>
+              <Megaphone size={16} /> Broadcast
+            </button>
+          )}
           <button className="btn-secondary" onClick={handleLogout} style={{color: '#ef4444'}}>
             <LogOut size={16} /> Logout
           </button>
@@ -720,20 +742,28 @@ function App() {
                     {departmentFilter === 'All' && contacts[number] && contacts[number].department && (
                       <span className="mini-badge">{contacts[number].department}</span>
                     )}
+                    {contacts[number] && contacts[number].priority === 'Urgent' && (
+                      <span className="mini-badge" style={{backgroundColor: 'rgba(239,68,68,0.2)', color: '#ef4444'}}>Urgent</span>
+                    )}
+                    {contacts[number] && contacts[number].tags && (
+                      <span className="mini-badge" style={{backgroundColor: 'rgba(59,130,246,0.2)', color: '#3b82f6'}}>{contacts[number].tags}</span>
+                    )}
                     {contacts[number] && !contacts[number].bot_active && (
                       <span className="paused-dot" title="Bot Paused"></span>
                     )}
                   </div>
-                  <div className="contact-preview" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%'}}>
-                      {contacts[number]?.first_name && <span style={{fontSize: '10px', opacity: 0.6, display: 'block'}}>{number}</span>}
+                  <div className="contact-preview">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      {contacts[number]?.first_name && <span style={{fontSize: '11px', opacity: 0.5}}>{number}</span>}
+                      {contacts[number]?.last_message_at && (
+                        <span style={{fontSize: '11px', opacity: 0.5}}>
+                          {new Date(contacts[number].last_message_at).toLocaleString([], {month: 'short', day: 'numeric'})}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', fontSize: '13px'}}>
                       {messages.filter(m => m.sender_number === number).slice(-1)[0]?.body || 'Media attached'}
                     </div>
-                    {contacts[number]?.last_message_at && (
-                      <span style={{fontSize: '10px', opacity: 0.6, whiteSpace: 'nowrap'}}>
-                        {new Date(contacts[number].last_message_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1037,6 +1067,27 @@ function App() {
                 />
               </div>
               <div className="form-group">
+                <label>Priority</label>
+                <select 
+                  value={profileForm.priority} 
+                  onChange={e => setProfileForm({...profileForm, priority: e.target.value})}
+                  style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px 12px', color: 'var(--text-main)', fontSize: '13px', outline: 'none' }}
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Urgent">Urgent</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Tags (Comma separated)</label>
+                <input 
+                  type="text" 
+                  value={profileForm.tags} 
+                  onChange={e => setProfileForm({...profileForm, tags: e.target.value})}
+                  placeholder="e.g. Donor, Needs Follow-up"
+                />
+              </div>
+              <div className="form-group">
                 <label>Notes</label>
                 <textarea 
                   value={profileForm.notes} 
@@ -1063,9 +1114,11 @@ function App() {
         <div className="directory-overlay">
           <div className="directory-header">
             <h2>Contacts Directory</h2>
-            <button className="btn-export" onClick={exportToCSV}>
-              <Download size={18} /> Export to Excel (CSV)
-            </button>
+            {userRole !== 'volunteer' && (
+              <button className="btn-export" onClick={exportToCSV}>
+                <Download size={18} /> Export to Excel (CSV)
+              </button>
+            )}
           </div>
           <div className="directory-table-container">
             <table className="directory-table">
@@ -1313,6 +1366,7 @@ function App() {
                     className="glass-input"
                   >
                     <option value="pending">Pending Approval</option>
+                    <option value="volunteer">Volunteer (View/Reply Only)</option>
                     <option value="staff">Haconet Staff (Restricted)</option>
                     <option value="admin">Admin (Full Access)</option>
                   </select>
