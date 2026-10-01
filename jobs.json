@@ -1,0 +1,62 @@
+[
+  {
+    "id": "job-1",
+    "title": "Warehouse Associate - First Shift",
+    "company": "Amazon Fulfillment Center",
+    "location": "Obetz, OH",
+    "date": "2026-09-30T02:36:13.350Z",
+    "category": "Warehouse",
+    "link": "https://hiring.amazon.com/",
+    "description": "Entry-level warehouse associate. No prior experience needed. Spanish/Haitian Creole speakers welcome."
+  },
+  {
+    "id": "job-2",
+    "title": "Commercial Cleaner",
+    "company": "Jani-King of Columbus",
+    "location": "Columbus, OH",
+    "date": "2026-09-29T02:36:13.351Z",
+    "category": "Cleaning",
+    "link": "https://www.janiking.com/columbus-commercial-cleaning/",
+    "description": "Evening shift commercial cleaner for office buildings. Training provided."
+  },
+  {
+    "id": "job-3",
+    "title": "Bilingual Customer Support Representative",
+    "company": "Nationwide",
+    "location": "Columbus, OH (Hybrid)",
+    "date": "2026-09-27T02:36:13.351Z",
+    "category": "Office",
+    "link": "https://nationwide.com/careers",
+    "description": "Looking for fluent speakers to assist our diverse client base."
+  },
+  {
+    "id": "job-4",
+    "title": "Line Cook / Kitchen Prep",
+    "company": "Cameron Mitchell Restaurants",
+    "location": "Easton Town Center, OH",
+    "date": "2026-09-26T02:36:13.351Z",
+    "category": "Kitchen",
+    "link": "https://cameronmitchell.com/careers",
+    "description": "Fast-paced kitchen environment. Great benefits and growth opportunities."
+  },
+  {
+    "id": "job-5",
+    "title": "Manufacturing Assembly Worker",
+    "company": "Honda Marysville Auto Plant",
+    "location": "Marysville, OH",
+    "date": "2026-09-24T02:36:13.351Z",
+    "category": "Factory",
+    "link": "https://ohio.honda.com/careers",
+    "description": "Assembly line work. Transportation assistance programs available for Columbus residents."
+  },
+  {
+    "id": "job-6",
+    "title": "Delivery Driver (No CDL Required)",
+    "company": "FedEx Ground",
+    "location": "Grove City, OH",
+    "date": "2026-09-22T02:36:13.351Z",
+    "category": "Delivery",
+    "link": "https://careers.fedex.com/",
+    "description": "Local delivery routes. Must have a valid US drivers license."
+  }
+]
